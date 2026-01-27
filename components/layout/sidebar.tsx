@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Briefcase,
+  Repeat,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -26,6 +27,7 @@ const navItems = [
   { href: '/dashboard/transactions', label: 'Transactions', icon: ArrowLeftRight },
   { href: '/dashboard/accounts', label: 'Accounts', icon: Wallet },
   { href: '/dashboard/wallets', label: 'Wallets', icon: Briefcase },
+  { href: '/dashboard/recurring', label: 'Recurring', icon: Repeat },
   { href: '/dashboard/reports', label: 'Reports', icon: PieChart },
   { href: '/dashboard/budgets', label: 'Budgets', icon: Target },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },

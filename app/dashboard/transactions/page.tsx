@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { TransactionList } from '@/components/transactions/transaction-list'
+import { TransactionListWithFilters } from '@/components/transactions/transaction-list-with-filters'
 import { QuickAddTransaction } from '@/components/dashboard/quick-add-transaction'
 
 export default async function TransactionsPage() {
@@ -13,12 +13,24 @@ export default async function TransactionsPage() {
       *,
       account:accounts(name, icon),
       category:categories(name, icon, color),
-      to_account:accounts!transactions_to_account_id_fkey(name, icon)
+      to_account:accounts!transactions_to_account_id_fkey(name, icon),
+      wallet:wallets(name, icon, color)
     `)
     .eq('user_id', user?.id)
     .order('date', { ascending: false })
     .order('created_at', { ascending: false })
-    .limit(100)
+    .limit(500)
+
+  const { data: accounts } = await supabase
+    .from('accounts')
+    .select('*')
+    .eq('user_id', user?.id)
+    .eq('is_archived', false)
+
+  const { data: categories } = await supabase
+    .from('categories')
+    .select('*')
+    .eq('user_id', user?.id)
 
   return (
     <div className="space-y-6">
@@ -27,7 +39,11 @@ export default async function TransactionsPage() {
         <QuickAddTransaction />
       </div>
 
-      <TransactionList transactions={transactions || []} />
+      <TransactionListWithFilters 
+        transactions={transactions || []}
+        accounts={accounts || []}
+        categories={categories || []}
+      />
     </div>
   )
 }

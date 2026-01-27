@@ -7,12 +7,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
 import {
   Select,
   SelectContent,
@@ -268,17 +268,17 @@ export function AiTransactionDialog({
   )
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog open={open} onOpenChange={setOpen}>
+      <ResponsiveDialogTrigger asChild>
         <Button className="gap-2 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300">
           <Wand2 className="h-4 w-4" />
           <span className="hidden sm:inline">Smart Add</span>
           <span className="sm:hidden">Add</span>
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      </ResponsiveDialogTrigger>
+      <ResponsiveDialogContent className="sm:max-w-lg">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
             {state === 'input' && 'Add Transaction'}
             {state === 'parsing' && 'Understanding...'}
@@ -286,8 +286,8 @@ export function AiTransactionDialog({
             {state === 'summary' && 'Review & Save'}
             {state === 'saving' && 'Saving...'}
             {state === 'error' && 'Oops!'}
-          </DialogTitle>
-        </DialogHeader>
+          </ResponsiveDialogTitle>
+        </ResponsiveDialogHeader>
 
         {/* INPUT STATE */}
         {state === 'input' && (
@@ -608,7 +608,7 @@ export function AiTransactionDialog({
             <p className="text-muted-foreground">Saving transactions...</p>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

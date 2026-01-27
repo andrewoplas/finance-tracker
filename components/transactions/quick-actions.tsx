@@ -106,10 +106,10 @@ export function QuickActions({ frequentTransactions }: QuickActionsProps) {
             >
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={() => handleQuickLog(tx)}
                 disabled={isLoading}
-                className="group relative overflow-hidden hover:border-primary/50 hover:shadow-sm"
+                className="group relative overflow-hidden hover:border-primary/50 hover:shadow-sm min-h-[44px] touch-manipulation"
               >
                 {/* Icon */}
                 {tx.category_icon && (

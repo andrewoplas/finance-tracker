@@ -1,5 +1,6 @@
 import { Sidebar } from '@/components/layout/sidebar'
 import { BottomNavigation } from '@/components/layout/bottom-navigation'
+import { MobileFAB } from '@/components/layout/mobile-fab'
 
 export default function DashboardLayout({
   children,
@@ -20,6 +21,9 @@ export default function DashboardLayout({
 
       {/* Mobile: Bottom Navigation */}
       <BottomNavigation />
+      
+      {/* Mobile: Floating Action Button */}
+      <MobileFAB />
     </div>
   )
 }

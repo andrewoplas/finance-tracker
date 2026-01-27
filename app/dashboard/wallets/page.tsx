@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-<parameter name="content">import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
 import { WalletList } from '@/components/wallets/wallet-list'
 import { AddWalletButton } from '@/components/wallets/add-wallet-button'

@@ -19,10 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus } from 'lucide-react'
+import { Plus, ArrowDownRight, ArrowUpRight, ArrowLeftRight, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Account, Category, TransactionType, Wallet } from '@/types/database'
 import { useRouter } from 'next/navigation'
+import { cn } from '@/lib/utils'
+
+const transactionTypes = [
+  { value: 'expense', label: 'Expense', icon: ArrowUpRight, color: 'text-expense bg-expense/10 border-expense/20' },
+  { value: 'income', label: 'Income', icon: ArrowDownRight, color: 'text-income bg-income/10 border-income/20' },
+  { value: 'transfer', label: 'Transfer', icon: ArrowLeftRight, color: 'text-transfer bg-transfer/10 border-transfer/20' },
+]
 
 export function QuickAddTransaction() {
   const [open, setOpen] = useState(false)
@@ -123,150 +130,181 @@ export function QuickAddTransaction() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Transaction
+        <Button className="gap-2 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300">
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">Add Transaction</span>
+          <span className="sm:hidden">Add</span>
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Transaction</DialogTitle>
+          <DialogTitle className="text-xl">New Transaction</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5 pt-2">
           {/* Type Toggle */}
-          <div className="flex gap-2">
-            {(['expense', 'income', 'transfer'] as TransactionType[]).map((t) => (
-              <Button
-                key={t}
-                type="button"
-                variant={type === t ? 'default' : 'outline'}
-                onClick={() => setType(t)}
-                className="flex-1 capitalize"
-              >
-                {t}
-              </Button>
-            ))}
+          <div className="grid grid-cols-3 gap-2">
+            {transactionTypes.map((t) => {
+              const Icon = t.icon
+              const isActive = type === t.value
+              return (
+                <button
+                  key={t.value}
+                  type="button"
+                  onClick={() => setType(t.value as TransactionType)}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200",
+                    isActive 
+                      ? t.color + " border-current" 
+                      : "border-border text-muted-foreground hover:border-muted-foreground/50 hover:bg-accent"
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="text-xs font-medium">{t.label}</span>
+                </button>
+              )
+            })}
           </div>
 
-          {/* Amount */}
+          {/* Amount - Big and prominent */}
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
+            <Label htmlFor="amount" className="text-muted-foreground">Amount</Label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-semibold text-muted-foreground">₱</span>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="pl-10 text-2xl font-semibold h-14 rounded-xl"
+                required
+              />
+            </div>
           </div>
 
-          {/* Account */}
-          <div className="space-y-2">
-            <Label>{type === 'transfer' ? 'From Account' : 'Account'}</Label>
-            <Select value={accountId || undefined} onValueChange={setAccountId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select account" />
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.icon} {account.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* To Account (Transfer only) */}
-          {type === 'transfer' && (
+          <div className="grid grid-cols-2 gap-3">
+            {/* Account */}
             <div className="space-y-2">
-              <Label>To Account</Label>
-              <Select value={toAccountId || undefined} onValueChange={setToAccountId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select destination" />
+              <Label className="text-muted-foreground">{type === 'transfer' ? 'From' : 'Account'}</Label>
+              <Select value={accountId || undefined} onValueChange={setAccountId}>
+                <SelectTrigger className="h-11 rounded-xl">
+                  <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
-                  {accounts
-                    .filter((a) => a.id !== accountId)
-                    .map((account) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        {account.icon} {account.name}
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.icon} {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* To Account or Category */}
+            {type === 'transfer' ? (
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">To</Label>
+                <Select value={toAccountId || undefined} onValueChange={setToAccountId}>
+                  <SelectTrigger className="h-11 rounded-xl">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts
+                      .filter((a) => a.id !== accountId)
+                      .map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.icon} {account.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Category</Label>
+                <Select value={categoryId || undefined} onValueChange={setCategoryId}>
+                  <SelectTrigger className="h-11 rounded-xl">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredCategories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.icon} {category.name}
                       </SelectItem>
                     ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
 
-          {/* Category (not for transfers) */}
-          {type !== 'transfer' && (
+          <div className="grid grid-cols-2 gap-3">
+            {/* Date */}
             <div className="space-y-2">
-              <Label>Category</Label>
-              <Select value={categoryId || undefined} onValueChange={setCategoryId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredCategories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.icon} {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="date" className="text-muted-foreground">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="h-11 rounded-xl"
+                required
+              />
             </div>
-          )}
 
-          {/* Wallet (not for transfers) */}
-          {type !== 'transfer' && wallets.length > 0 && (
-            <div className="space-y-2">
-              <Label>Wallet (optional)</Label>
-              <Select 
-                value={walletId || undefined} 
-                onValueChange={(v) => setWalletId(v === 'none' ? '' : v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select wallet" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {wallets.map((wallet) => (
-                    <SelectItem key={wallet.id} value={wallet.id}>
-                      {wallet.icon} {wallet.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+            {/* Wallet (only for non-transfers if wallets exist) */}
+            {type !== 'transfer' && wallets.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Wallet</Label>
+                <Select 
+                  value={walletId || undefined} 
+                  onValueChange={(v) => setWalletId(v === 'none' ? '' : v)}
+                >
+                  <SelectTrigger className="h-11 rounded-xl">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {wallets.map((wallet) => (
+                      <SelectItem key={wallet.id} value={wallet.id}>
+                        {wallet.icon} {wallet.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-          {/* Date */}
-          <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
-            <Input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
+            {/* Fill space if no wallet */}
+            {(type === 'transfer' || wallets.length === 0) && <div />}
           </div>
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description (optional)</Label>
+            <Label htmlFor="description" className="text-muted-foreground">Note (optional)</Label>
             <Input
               id="description"
               placeholder="What was this for?"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              className="h-11 rounded-xl"
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Adding...' : 'Add Transaction'}
+          <Button 
+            type="submit" 
+            className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25" 
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              'Add Transaction'
+            )}
           </Button>
         </form>
       </DialogContent>

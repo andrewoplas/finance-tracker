@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { TransactionListWithFilters } from '@/components/transactions/transaction-list-with-filters'
 import { QuickAddTransaction } from '@/components/dashboard/quick-add-transaction'
+import { ArrowLeftRight } from 'lucide-react'
 
 export default async function TransactionsPage() {
   const supabase = await createClient()
@@ -32,13 +33,25 @@ export default async function TransactionsPage() {
     .select('*')
     .eq('user_id', user?.id)
 
+  const transactionCount = transactions?.length || 0
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Transactions</h1>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Transactions</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
+            <p className="text-muted-foreground">
+              {transactionCount} transaction{transactionCount !== 1 ? 's' : ''}
+            </p>
+          </div>
+        </div>
         <QuickAddTransaction />
       </div>
 
+      {/* Transaction List */}
       <TransactionListWithFilters 
         transactions={transactions || []}
         accounts={accounts || []}

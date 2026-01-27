@@ -15,6 +15,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { SwipeableTransactionItem } from './swipeable-transaction-item'
 
 interface TransactionListProps {
   transactions: Transaction[]
@@ -78,10 +79,13 @@ export function TransactionList({ transactions }: TransactionListProps) {
                 const toAccount = transaction.to_account as any
                 
                 return (
-                  <div
+                  <SwipeableTransactionItem
                     key={transaction.id}
-                    className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors duration-200 group"
+                    onDelete={() => handleDelete(transaction)}
                   >
+                    <div
+                      className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors duration-200 group"
+                    >
                     <div className="flex items-center gap-4">
                       {/* Category Icon with colored background */}
                       <div 
@@ -155,7 +159,8 @@ export function TransactionList({ transactions }: TransactionListProps) {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                  </div>
+                    </div>
+                  </SwipeableTransactionItem>
                 )
               })}
             </CardContent>

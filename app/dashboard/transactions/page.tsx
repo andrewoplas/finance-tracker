@@ -4,6 +4,7 @@ import { AiTransactionDialog } from '@/components/transactions/ai-transaction-di
 import { QuickActions } from '@/components/transactions/quick-actions'
 import { getFrequentTransactions } from '@/lib/actions/frequent-transactions'
 import { PageTransition } from '@/components/ui/page-transition'
+import { MobilePageHeader } from '@/components/layout/mobile-page-header'
 import { ArrowLeftRight } from 'lucide-react'
 
 export default async function TransactionsPage() {
@@ -43,20 +44,12 @@ export default async function TransactionsPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-6 px-4 md:px-0 py-6 md:py-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Transactions</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
-            <p className="text-muted-foreground">
-              {transactionCount} transaction{transactionCount !== 1 ? 's' : ''}
-            </p>
-          </div>
-        </div>
-        <AiTransactionDialog />
-      </div>
+      <div className="space-y-6 px-4 md:px-0 py-4 md:py-0">
+        <MobilePageHeader
+          title="Transactions"
+          subtitle={`${transactionCount} transaction${transactionCount !== 1 ? 's' : ''}`}
+          action={<AiTransactionDialog />}
+        />
 
       {/* Quick Actions */}
       <QuickActions frequentTransactions={frequentTransactions} />

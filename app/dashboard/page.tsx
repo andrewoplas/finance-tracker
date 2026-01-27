@@ -5,6 +5,7 @@ import { RecentTransactions } from '@/components/dashboard/recent-transactions'
 import { AiTransactionDialog } from '@/components/transactions/ai-transaction-dialog'
 import { AnimatedStatCard } from '@/components/dashboard/animated-stat-card'
 import { PageTransition } from '@/components/ui/page-transition'
+import { MobilePageHeader } from '@/components/layout/mobile-page-header'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -50,19 +51,12 @@ export default async function DashboardPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-6 md:space-y-8 px-4 md:px-0 py-6 md:py-0">
-        {/* Header with Greeting */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              {getGreeting()}, {firstName}! 👋
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Here&apos;s your financial snapshot for this month
-            </p>
-          </div>
-          <AiTransactionDialog />
-        </div>
+      <div className="space-y-6 md:space-y-8 px-4 md:px-0 py-4 md:py-0">
+        <MobilePageHeader
+          title={`${getGreeting()}, ${firstName}! 👋`}
+          subtitle="Your financial snapshot for this month"
+          action={<AiTransactionDialog />}
+        />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

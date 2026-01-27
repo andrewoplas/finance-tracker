@@ -84,6 +84,9 @@ export interface RecurringTransaction {
   next_date: string
   is_active: boolean
   created_at: string
+  // Joined fields
+  account?: Account
+  category?: Category
 }
 
 export interface Wallet {

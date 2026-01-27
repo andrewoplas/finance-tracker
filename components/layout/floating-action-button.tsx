@@ -13,7 +13,7 @@ export function FloatingActionButton() {
       <button
         onClick={() => setOpen(true)}
         className={cn(
-          "fixed bottom-6 right-6 z-50",
+          "fixed bottom-20 right-6 lg:bottom-6 z-[60]",
           "h-14 w-14 rounded-full",
           "bg-gradient-to-br from-primary to-primary/90",
           "text-primary-foreground",

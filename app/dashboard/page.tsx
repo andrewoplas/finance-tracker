@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/constants'
-import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, Plus } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp } from 'lucide-react'
 import { RecentTransactions } from '@/components/dashboard/recent-transactions'
-import { QuickAddTransaction } from '@/components/dashboard/quick-add-transaction'
+import { AiTransactionDialog } from '@/components/transactions/ai-transaction-dialog'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -59,7 +59,7 @@ export default async function DashboardPage() {
             Here&apos;s your financial snapshot for this month
           </p>
         </div>
-        <QuickAddTransaction />
+        <AiTransactionDialog />
       </div>
 
       {/* Stats Cards */}

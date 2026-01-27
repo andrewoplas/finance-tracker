@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { TransactionListWithFilters } from '@/components/transactions/transaction-list-with-filters'
-import { QuickAddTransaction } from '@/components/dashboard/quick-add-transaction'
+import { AiTransactionDialog } from '@/components/transactions/ai-transaction-dialog'
 import { ArrowLeftRight } from 'lucide-react'
 
 export default async function TransactionsPage() {
@@ -48,7 +48,7 @@ export default async function TransactionsPage() {
             </p>
           </div>
         </div>
-        <QuickAddTransaction />
+        <AiTransactionDialog />
       </div>
 
       {/* Transaction List */}

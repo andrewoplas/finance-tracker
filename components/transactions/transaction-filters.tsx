@@ -28,6 +28,8 @@ export interface FilterState {
   dateTo: string
 }
 
+const ALL_VALUE = 'all'
+
 export function TransactionFilters({ accounts, categories, onFilterChange }: TransactionFiltersProps) {
   const [filters, setFilters] = useState<FilterState>({
     search: '',
@@ -39,7 +41,9 @@ export function TransactionFilters({ accounts, categories, onFilterChange }: Tra
   })
 
   const updateFilter = (key: keyof FilterState, value: string) => {
-    const newFilters = { ...filters, [key]: value }
+    // Convert 'all' back to empty string for filtering logic
+    const actualValue = value === ALL_VALUE ? '' : value
+    const newFilters = { ...filters, [key]: actualValue }
     setFilters(newFilters)
     onFilterChange(newFilters)
   }
@@ -74,24 +78,24 @@ export function TransactionFilters({ accounts, categories, onFilterChange }: Tra
 
       {/* Filters Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <Select value={filters.type} onValueChange={(v) => updateFilter('type', v)}>
+        <Select value={filters.type || ALL_VALUE} onValueChange={(v) => updateFilter('type', v)}>
           <SelectTrigger>
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Types</SelectItem>
+            <SelectItem value={ALL_VALUE}>All Types</SelectItem>
             <SelectItem value="income">Income</SelectItem>
             <SelectItem value="expense">Expense</SelectItem>
             <SelectItem value="transfer">Transfer</SelectItem>
           </SelectContent>
         </Select>
 
-        <Select value={filters.accountId} onValueChange={(v) => updateFilter('accountId', v)}>
+        <Select value={filters.accountId || ALL_VALUE} onValueChange={(v) => updateFilter('accountId', v)}>
           <SelectTrigger>
             <SelectValue placeholder="All Accounts" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Accounts</SelectItem>
+            <SelectItem value={ALL_VALUE}>All Accounts</SelectItem>
             {accounts.map((account) => (
               <SelectItem key={account.id} value={account.id}>
                 {account.icon} {account.name}
@@ -100,12 +104,12 @@ export function TransactionFilters({ accounts, categories, onFilterChange }: Tra
           </SelectContent>
         </Select>
 
-        <Select value={filters.categoryId} onValueChange={(v) => updateFilter('categoryId', v)}>
+        <Select value={filters.categoryId || ALL_VALUE} onValueChange={(v) => updateFilter('categoryId', v)}>
           <SelectTrigger>
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Categories</SelectItem>
+            <SelectItem value={ALL_VALUE}>All Categories</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category.id} value={category.id}>
                 {category.icon} {category.name}

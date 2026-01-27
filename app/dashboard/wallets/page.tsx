@@ -20,7 +20,7 @@ export default async function WalletsPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-8">
+      <div className="space-y-6 md:space-y-8 px-4 md:px-0 py-6 md:py-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

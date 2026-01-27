@@ -7,23 +7,19 @@ export default async function TransactionsPage() {
   
   const { data: { user } } = await supabase.auth.getUser()
   
-  const { data: transactions, error: transactionsError } = await supabase
+  // Fetch transactions without wallet join first (might not exist for all users)
+  const { data: transactions } = await supabase
     .from('transactions')
     .select(`
       *,
       account:accounts(name, icon),
       category:categories(name, icon, color),
-      to_account:accounts!transactions_to_account_id_fkey(name, icon),
-      wallet:wallets(name, icon, color)
+      to_account:accounts!transactions_to_account_id_fkey(name, icon)
     `)
     .eq('user_id', user?.id)
     .order('date', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(500)
-
-  if (transactionsError) {
-    console.error('Error loading transactions:', transactionsError)
-  }
 
   const { data: accounts } = await supabase
     .from('accounts')

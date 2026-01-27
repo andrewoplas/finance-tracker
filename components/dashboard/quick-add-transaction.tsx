@@ -68,6 +68,19 @@ export function QuickAddTransaction() {
     e.preventDefault()
     setLoading(true)
 
+    // Validation
+    if (!accountId) {
+      toast.error('Please select an account')
+      setLoading(false)
+      return
+    }
+
+    if (type === 'transfer' && !toAccountId) {
+      toast.error('Please select destination account')
+      setLoading(false)
+      return
+    }
+
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
@@ -152,7 +165,7 @@ export function QuickAddTransaction() {
           {/* Account */}
           <div className="space-y-2">
             <Label>{type === 'transfer' ? 'From Account' : 'Account'}</Label>
-            <Select value={accountId} onValueChange={setAccountId} required>
+            <Select value={accountId || undefined} onValueChange={setAccountId}>
               <SelectTrigger>
                 <SelectValue placeholder="Select account" />
               </SelectTrigger>
@@ -170,7 +183,7 @@ export function QuickAddTransaction() {
           {type === 'transfer' && (
             <div className="space-y-2">
               <Label>To Account</Label>
-              <Select value={toAccountId} onValueChange={setToAccountId} required>
+              <Select value={toAccountId || undefined} onValueChange={setToAccountId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select destination" />
                 </SelectTrigger>
@@ -191,7 +204,7 @@ export function QuickAddTransaction() {
           {type !== 'transfer' && (
             <div className="space-y-2">
               <Label>Category</Label>
-              <Select value={categoryId} onValueChange={setCategoryId}>
+              <Select value={categoryId || undefined} onValueChange={setCategoryId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -210,12 +223,15 @@ export function QuickAddTransaction() {
           {type !== 'transfer' && wallets.length > 0 && (
             <div className="space-y-2">
               <Label>Wallet (optional)</Label>
-              <Select value={walletId} onValueChange={setWalletId}>
+              <Select 
+                value={walletId || undefined} 
+                onValueChange={(v) => setWalletId(v === 'none' ? '' : v)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select wallet" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {wallets.map((wallet) => (
                     <SelectItem key={wallet.id} value={wallet.id}>
                       {wallet.icon} {wallet.name}

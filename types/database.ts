@@ -50,11 +50,13 @@ export interface Transaction {
   receipt_url: string | null
   is_recurring: boolean
   recurring_id: string | null
+  wallet_id: string | null
   created_at: string
   // Joined fields
   account?: Account
   category?: Category
   to_account?: Account
+  wallet?: Wallet
 }
 
 export interface Budget {
@@ -81,6 +83,17 @@ export interface RecurringTransaction {
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
   next_date: string
   is_active: boolean
+  created_at: string
+}
+
+export interface Wallet {
+  id: string
+  user_id: string
+  name: string
+  icon: string | null
+  color: string | null
+  target_percentage: number | null
+  balance: number
   created_at: string
 }
 

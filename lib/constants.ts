@@ -50,3 +50,9 @@ export const formatDate = (date: string): string => {
     day: 'numeric',
   })
 }
+
+export const DEFAULT_WALLETS = [
+  { name: 'Life Wallet', icon: '🏠', color: '#3b82f6', target_percentage: 50 },
+  { name: 'Play Wallet', icon: '🎮', color: '#8b5cf6', target_percentage: 30 },
+  { name: 'Growth Wallet', icon: '📈', color: '#10b981', target_percentage: 20 },
+]

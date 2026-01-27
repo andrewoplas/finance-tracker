@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
-import { Account, Category, TransactionType } from '@/types/database'
+import { Account, Category, TransactionType, Wallet } from '@/types/database'
 import { useRouter } from 'next/navigation'
 
 export function QuickAddTransaction() {
@@ -29,10 +29,12 @@ export function QuickAddTransaction() {
   const [loading, setLoading] = useState(false)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [wallets, setWallets] = useState<Wallet[]>([])
   
   const [type, setType] = useState<TransactionType>('expense')
   const [accountId, setAccountId] = useState('')
   const [categoryId, setCategoryId] = useState('')
+  const [walletId, setWalletId] = useState('')
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -46,13 +48,15 @@ export function QuickAddTransaction() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const [accountsRes, categoriesRes] = await Promise.all([
+      const [accountsRes, categoriesRes, walletsRes] = await Promise.all([
         supabase.from('accounts').select('*').eq('user_id', user.id).eq('is_archived', false),
         supabase.from('categories').select('*').eq('user_id', user.id),
+        supabase.from('wallets').select('*').eq('user_id', user.id),
       ])
 
       setAccounts(accountsRes.data || [])
       setCategories(categoriesRes.data || [])
+      setWallets(walletsRes.data || [])
     }
 
     if (open) fetchData()
@@ -71,6 +75,7 @@ export function QuickAddTransaction() {
       user_id: user.id,
       account_id: accountId,
       category_id: type === 'transfer' ? null : categoryId || null,
+      wallet_id: walletId || null,
       type,
       amount: parseFloat(amount),
       description: description || null,
@@ -94,6 +99,7 @@ export function QuickAddTransaction() {
     setType('expense')
     setAccountId('')
     setCategoryId('')
+    setWalletId('')
     setAmount('')
     setDescription('')
     setDate(new Date().toISOString().split('T')[0])
@@ -193,6 +199,26 @@ export function QuickAddTransaction() {
                   {filteredCategories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.icon} {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Wallet (not for transfers) */}
+          {type !== 'transfer' && wallets.length > 0 && (
+            <div className="space-y-2">
+              <Label>Wallet (optional)</Label>
+              <Select value={walletId} onValueChange={setWalletId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select wallet" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {wallets.map((wallet) => (
+                    <SelectItem key={wallet.id} value={wallet.id}>
+                      {wallet.icon} {wallet.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

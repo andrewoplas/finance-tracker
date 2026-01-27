@@ -81,8 +81,20 @@ const exampleInputs = [
   "250 lunch, 120 coffee, 500 grab",
 ]
 
-export function AiTransactionDialog() {
-  const [open, setOpen] = useState(false)
+interface AiTransactionDialogProps {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export function AiTransactionDialog({ 
+  open: controlledOpen, 
+  onOpenChange: controlledOnOpenChange 
+}: AiTransactionDialogProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  
+  // Use controlled state if provided, otherwise use internal state
+  const open = controlledOpen ?? internalOpen
+  const setOpen = controlledOnOpenChange ?? setInternalOpen
   const [state, setState] = useState<DialogState>('input')
   const [inputText, setInputText] = useState('')
   const [transactions, setTransactions] = useState<ParsedTransaction[]>([])

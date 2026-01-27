@@ -7,7 +7,7 @@ export default async function TransactionsPage() {
   
   const { data: { user } } = await supabase.auth.getUser()
   
-  const { data: transactions } = await supabase
+  const { data: transactions, error: transactionsError } = await supabase
     .from('transactions')
     .select(`
       *,
@@ -20,6 +20,10 @@ export default async function TransactionsPage() {
     .order('date', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(500)
+
+  if (transactionsError) {
+    console.error('Error loading transactions:', transactionsError)
+  }
 
   const { data: accounts } = await supabase
     .from('accounts')

@@ -36,7 +36,7 @@ export function TransactionListWithFilters({
         const matchesDescription = t.description?.toLowerCase().includes(searchLower)
         const matchesCategory = (t.category as any)?.name?.toLowerCase().includes(searchLower)
         const matchesAccount = (t.account as any)?.name?.toLowerCase().includes(searchLower)
-        const matchesAmount = t.amount.toString().includes(searchLower)
+        const matchesAmount = t.amount?.toString().includes(searchLower) || false
         
         if (!matchesDescription && !matchesCategory && !matchesAccount && !matchesAmount) {
           return false
@@ -91,10 +91,10 @@ export function TransactionListWithFilters({
   const stats = useMemo(() => {
     const income = filteredTransactions
       .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + Number(t.amount), 0)
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
     const expense = filteredTransactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + Number(t.amount), 0)
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
     return { income, expense, net: income - expense }
   }, [filteredTransactions])
 

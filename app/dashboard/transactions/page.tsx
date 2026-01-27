@@ -7,12 +7,12 @@ export default async function TransactionsPage() {
   
   const { data: { user } } = await supabase.auth.getUser()
   
-  // Fetch transactions without wallet join first (might not exist for all users)
+  // Fetch transactions - need explicit FK names for multiple accounts joins
   const { data: transactions } = await supabase
     .from('transactions')
     .select(`
       *,
-      account:accounts(name, icon),
+      account:accounts!transactions_account_id_fkey(name, icon),
       category:categories(name, icon, color),
       to_account:accounts!transactions_to_account_id_fkey(name, icon)
     `)

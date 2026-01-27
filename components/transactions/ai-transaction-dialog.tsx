@@ -122,6 +122,7 @@ export function AiTransactionDialog({
   const parseInput = async () => {
     if (!inputText.trim()) return
 
+    console.log('🤖 AI Parse started:', { text: inputText })
     setState('parsing')
     setError(null)
 
@@ -132,15 +133,29 @@ export function AiTransactionDialog({
         body: JSON.stringify({ text: inputText }),
       })
 
+      console.log('📡 API Response:', { 
+        status: response.status, 
+        ok: response.ok,
+        statusText: response.statusText 
+      })
+
       const data = await response.json()
+      console.log('📦 Parsed data:', data)
 
       if (!response.ok) {
+        console.error('❌ API Error:', data)
         throw new Error(data.error || 'Failed to parse')
       }
 
       if (!data.transactions || data.transactions.length === 0) {
+        console.warn('⚠️ No transactions parsed')
         throw new Error('Could not understand the transaction. Please try again.')
       }
+
+      console.log('✅ Parse successful:', {
+        transactionCount: data.transactions.length,
+        transactions: data.transactions
+      })
 
       setTransactions(data.transactions)
       setCategories(data.categories || [])
@@ -148,6 +163,11 @@ export function AiTransactionDialog({
       setCurrentIndex(0)
       setState('editing')
     } catch (err: any) {
+      console.error('🚨 Parse error:', {
+        message: err.message,
+        error: err,
+        stack: err.stack
+      })
       setError(err.message)
       setState('error')
     }
@@ -181,18 +201,24 @@ export function AiTransactionDialog({
   }
 
   const saveAllTransactions = async () => {
+    console.log('💾 Saving transactions:', { count: transactions.length, transactions })
     setState('saving')
     
     try {
       const { data: { user } } = await supabase.auth.getUser()
+      console.log('👤 User:', { userId: user?.id, authenticated: !!user })
+      
       if (!user) throw new Error('Not authenticated')
 
       // Validate all transactions have required fields
+      console.log('✅ Validating transactions...')
       for (const t of transactions) {
         if (!t.accountId) {
+          console.error('❌ Validation failed: Missing account', t)
           throw new Error('Please select an account for all transactions')
         }
         if (t.type === 'transfer' && !t.toAccountId) {
+          console.error('❌ Validation failed: Missing destination account', t)
           throw new Error('Please select destination account for transfers')
         }
       }
@@ -209,16 +235,30 @@ export function AiTransactionDialog({
         to_account_id: t.type === 'transfer' ? t.toAccountId : null,
       }))
 
-      const { error: insertError } = await supabase
+      console.log('📤 Inserting to database:', inserts)
+
+      const { error: insertError, data: insertData } = await supabase
         .from('transactions')
         .insert(inserts)
+        .select()
 
-      if (insertError) throw insertError
+      console.log('📥 Database response:', { error: insertError, data: insertData })
 
+      if (insertError) {
+        console.error('🚨 Database error:', insertError)
+        throw insertError
+      }
+
+      console.log('✅ Transactions saved successfully!')
       toast.success(`Added ${transactions.length} transaction${transactions.length > 1 ? 's' : ''}!`)
       setOpen(false)
       router.refresh()
     } catch (err: any) {
+      console.error('🚨 Save error:', {
+        message: err.message,
+        error: err,
+        stack: err.stack
+      })
       toast.error(err.message)
       setState('summary')
     }

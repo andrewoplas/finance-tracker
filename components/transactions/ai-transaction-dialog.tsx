@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { 
-  Plus, 
   Loader2, 
   Sparkles, 
   ArrowRight, 

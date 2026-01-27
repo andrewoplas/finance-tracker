@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { TransactionListWithFilters } from '@/components/transactions/transaction-list-with-filters'
 import { AiTransactionDialog } from '@/components/transactions/ai-transaction-dialog'
+import { QuickActions } from '@/components/transactions/quick-actions'
+import { getFrequentTransactions } from '@/lib/actions/frequent-transactions'
+import { PageTransition } from '@/components/ui/page-transition'
 import { ArrowLeftRight } from 'lucide-react'
 
 export default async function TransactionsPage() {
@@ -33,10 +36,14 @@ export default async function TransactionsPage() {
     .select('*')
     .eq('user_id', user?.id)
 
+  // Get frequent transactions for quick log
+  const frequentTransactions = await getFrequentTransactions(5)
+
   const transactionCount = transactions?.length || 0
 
   return (
-    <div className="space-y-8">
+    <PageTransition>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -51,12 +58,16 @@ export default async function TransactionsPage() {
         <AiTransactionDialog />
       </div>
 
+      {/* Quick Actions */}
+      <QuickActions frequentTransactions={frequentTransactions} />
+
       {/* Transaction List */}
       <TransactionListWithFilters 
         transactions={transactions || []}
         accounts={accounts || []}
         categories={categories || []}
       />
-    </div>
+      </div>
+    </PageTransition>
   )
 }

@@ -3,6 +3,7 @@ import { WalletList } from '@/components/wallets/wallet-list'
 import { AddWalletButton } from '@/components/wallets/add-wallet-button'
 import { formatCurrency } from '@/lib/constants'
 import { Briefcase } from 'lucide-react'
+import { PageTransition } from '@/components/ui/page-transition'
 
 export default async function WalletsPage() {
   const supabase = await createClient()
@@ -18,7 +19,8 @@ export default async function WalletsPage() {
   const totalWalletBalance = wallets.reduce((sum, w) => sum + Number(w.balance), 0)
 
   return (
-    <div className="space-y-8">
+    <PageTransition>
+      <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -35,8 +37,9 @@ export default async function WalletsPage() {
         <AddWalletButton />
       </div>
 
-      {/* Wallet List */}
-      <WalletList wallets={wallets} totalBalance={totalAccountBalance} />
-    </div>
+        {/* Wallet List */}
+        <WalletList wallets={wallets} totalBalance={totalAccountBalance} />
+      </div>
+    </PageTransition>
   )
 }

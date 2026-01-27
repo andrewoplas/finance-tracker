@@ -1,0 +1,25 @@
+-- Default categories (will be inserted per user on first login)
+-- This is handled in the app, but here's the reference
+
+-- EXPENSE CATEGORIES:
+-- 🍔 Food & Dining
+-- 🚗 Transportation
+-- 🛒 Groceries
+-- 🎮 Entertainment
+-- 💡 Utilities
+-- 🏠 Rent / Housing
+-- 🏥 Health
+-- 👕 Shopping
+-- 📱 Subscriptions
+-- 📚 Education
+-- ✈️ Travel
+-- 🎁 Gifts
+-- 💳 Fees & Charges
+-- 💰 Other Expense
+
+-- INCOME CATEGORIES:
+-- 💼 Salary
+-- 💻 Freelance
+-- 📈 Investments
+-- 🎁 Gifts Received
+-- 💵 Other Income

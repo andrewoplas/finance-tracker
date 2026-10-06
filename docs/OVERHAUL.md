@@ -84,7 +84,7 @@ Tests use only fresh synthetic PGlite PostgreSQL. They exercise all six migratio
 - No live session, production migration, PostgREST integration, deployment, push, new credential, or external MCP/OAuth setup was performed. Those remain separate rollout/setup work requiring authorization.
 - Native BudgetFlow export layout remains unverified without a representative synthetic/anonymized file. Category starts uncategorized on import for later review. The UI currently requires normalized headers.
 - Investments/net worth, FX/multi-currency, interest amortization, automatic bank synchronization, a paid-date cashflow report, budget rollover, and pagination beyond the bounded workspace are outside this milestone.
-- Browser visual QA/screenshots remain blocked: no supported browser automation surface was available, and native Chrome acquisition stalled for 71 minutes. HTTP smoke checks are reported separately; no visual-success claim is made.
+- Application visual QA is pending. The in-app browser became available during follow-up verification and rendered `/demo`; interaction/responsive checks have not yet been completed. Native Chrome acquisition previously stalled and is not being retried.
 - Next.js and matching lint config were updated from 16.1.4 to 16.3.8, plus compatible security updates. Five high development-only findings remain in the eslint-config-next → fast-glob → micromatch → braces chain. npm's forced suggestion downgrades lint config to 14.2.35; that breaking downgrade was not applied. Recheck advisories before rollout.
 
 ## Design basis
@@ -99,3 +99,21 @@ Friendly warm off-white, evergreen accents, readable labels, restrained rounded 
 - `npm run build`: passed with Next.js 16.3.8 / Webpack, including `/dashboard/plans` and `/demo/plans`.
 - Rebuilt production server HTTP smoke: `/demo`, `/demo/import`, `/demo/plans` returned 200 with expected page content. Unconfigured `/api/finance/workspace`, `/api/finance/preview`, `/api/finance/commit`, and `/api/parse-transaction` returned 503 `Database not configured` using empty requests. No credentials were supplied.
 - `git diff --check`: passed. No screenshot/browser-interaction evidence is claimed.
+
+## Budget Flow reference inspection and follow-up verification
+
+The installed Budget Flow macOS application was inspected read-only through supported native app tools. Its Overview and Transactions views were observed directly, including screenshots. No ledger edits were performed. Screenshots contain private financial records and are not repository assets; no private amounts, names, or records are reproduced here.
+
+Observed design patterns:
+
+- Native-looking system sans typography (exact font family unverified), plain bold page titles, quieter secondary metadata.
+- Neutral charcoal surfaces in the current dark appearance. A restrained teal action/navigation accent; semantic red/green amounts; category colors confined to small icons and tags. The light appearance was not inspected.
+- Fixed sidebar: four primary destinations, with accounts and categories subordinate. A compact month control, search, and overflow actions sit above the page title.
+- Overview gives one chart visual priority; alternate charts sit behind a six-page carousel. Supporting content uses simple full-width grouped lists rather than a grid of competing cards.
+- Transactions shows two summary values, secondary analysis/planned destinations, then date-grouped rows. Description is primary; account/tag is secondary; time and amount align right. Hairline separators and daily subtotals provide structure.
+
+The user rejected the existing prototype's typography, colors, and density. The next visual pass should remove the slogan hero and competing overview panels; use neutral light surfaces, a system font stack, compact month controls, one summary/chart, a review link/count, and a short grouped activity list. Plans, import, and reflection belong in secondary destinations. This is a proposed simplification, not a claim that the redesign has been implemented. Backend work is preserved.
+
+The authorized BudgetFlow CSV was not found by filename in accessible current-home Documents/Downloads/Desktop searches. The corresponding October 4 task directory was absent; the previously supplied original-home file path remained unreadable after an authorized read-only attempt. No actual export headers or rows were read, so native adapter compatibility and real totals remain unverified. No guessed native-format adapter was added.
+
+Transport audit: the implemented interface is cookie-authenticated REST. There is no MCP JSON-RPC initialize/tools-list/tools-call transport, MCP session lifecycle, or MCP authentication/discovery setup. A future adapter must bind authenticated owner context, expose narrow validated contracts, preserve preview/commit and idempotency semantics, and test protocol/auth failure paths. Existing REST routes alone do not constitute a connected MCP integration. No credentials or grants were created.

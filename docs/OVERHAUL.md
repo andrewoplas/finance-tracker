@@ -133,3 +133,7 @@ Verification after the visual pass:
 - Local preview: `http://127.0.0.1:4317/demo`. Demo edits reset when leaving the view, now explicitly stated in the UI. No push, deployment, live data changes, credentials, or grants.
 
 Loading/partial/server-error rendering remains implemented but was not fault-injected in browser QA. The inspected validation error and empty states are the browser-verified error/empty coverage. The original BudgetFlow export and live Supabase access remain unverified; REST remains REST, not an MCP connection.
+
+## Follow-up: local MCP adapter
+
+The earlier REST-only assessment describes the pre-adapter state. A disabled-by-default localhost MCP endpoint now exposes six validated tools using the official SDK, modern discovery and legacy stateless initialization. It reuses the authenticated REST/domain operations and refuses bearer authentication and non-local origins. See [MCP.md](MCP.md) for tested behavior, opt-in configuration, and the exact remaining remote OAuth/session setup. No working assistant connection is claimed. No credentials, grants, live data changes, deployment, or push occurred.

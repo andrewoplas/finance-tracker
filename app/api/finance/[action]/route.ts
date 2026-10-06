@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { requestSchema } from "@/lib/finance/contracts";
+import { financialOperation } from "@/lib/finance/operation-service";
 import {
   manilaToday,
   monthlyReport,
@@ -7,7 +7,6 @@ import {
   type LedgerEntry,
 } from "@/lib/finance/core";
 import { NextResponse } from "next/server";
-import { createHash } from "node:crypto";
 import { z } from "zod";
 
 const json = (body: unknown, status = 200) =>
@@ -177,44 +176,7 @@ export async function POST(
       ? json({ error: "Could not save plan" }, 503)
       : json({ saved: true });
   }
-  const parsed = requestSchema.safeParse(body);
-  if (!parsed.success)
-    return json(
-      { error: "Invalid financial operation", issues: parsed.error.flatten() },
-      400,
-    );
-  const payload = parsed.data;
-  // Canonical validated payload is identical for preview and commit. Preview performs no writes.
-  const digest = createHash("sha256")
-    .update(JSON.stringify(payload.operation))
-    .digest("hex");
-  if (action === "preview")
-    return json({
-      request_id: payload.request_id,
-      operation: payload.operation,
-      digest,
-      warnings: [
-        "Confirm account, dates, allocation and amount before committing. Ownership and revisions are checked atomically at commit.",
-      ],
-      persisted: false,
-    });
-  if (request.headers.get("x-finance-preview") !== digest)
-    return json(
-      { error: "Preview this exact operation before committing" },
-      409,
-    );
-  const { data, error } = await db.rpc("commit_financial_operation", {
-    request_id: payload.request_id,
-    operation: payload.operation,
-  });
-  if (error)
-    return json(
-      {
-        error: ["P0001", "40001"].includes(error.code)
-          ? error.message
-          : "Operation rejected. Check references and idempotency key; database migration may be required.",
-      },
-      error.code === "40001" ? 409 : 422,
-    );
-  return json({ result: data, persisted: true });
+  return financialOperation(action, body, request.headers.get("x-finance-preview"),
+    async args => { const result = await db.rpc("commit_financial_operation", args); return {data: result.data, error: result.error}; },
+  );
 }

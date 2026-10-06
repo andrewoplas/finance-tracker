@@ -8,11 +8,9 @@ import {
   ArrowDownLeft,
   ArrowRight,
   ArrowUpRight,
-  Check,
   ChevronLeft,
   ChevronRight,
   CircleHelp,
-  Leaf,
   X,
 } from "lucide-react";
 import { monthlyReport, minor, type LedgerEntry } from "@/lib/finance/core";
@@ -21,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 export type OverviewData = {
@@ -61,10 +60,14 @@ export function MonthlyOverview({
   month,
   data,
   demo = false,
+  view = "overview",
+  initialFilter = "all",
 }: {
   month: string;
   data: OverviewData;
   demo?: boolean;
+  view?: string;
+  initialFilter?: string;
 }) {
   const router = useRouter();
   const [entries, setEntries] = useState(data.entries);
@@ -72,7 +75,7 @@ export function MonthlyOverview({
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [notes, setNotes] = useState(data.retro ?? "");
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState(initialFilter);
   const reportEntries = data.reportEntries ?? entries;
   const report = useMemo(
     () => monthlyReport(reportEntries, month),
@@ -89,7 +92,7 @@ export function MonthlyOverview({
   const base = demo ? "/demo" : "/dashboard";
   async function savePlan() {
     if (demo) {
-      setNotice("Plan saved for this demo session only.");
+      setNotice("Reflection saved for this demo view only.");
       return;
     }
     setBusy(true);
@@ -126,13 +129,16 @@ export function MonthlyOverview({
       .reduce((n, t) => n + minor(t.amount), 0),
   );
   const max = Math.max(budget, report.spending, 1);
+  const visible = entries.filter(t => filter === "all" || (filter === "pending" ? t.review_status === "pending" : t.category_id === filter)).sort((a,b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+  const shown = view === "overview" ? visible.slice(0, 5) : visible;
+  const days = [...new Set(shown.map(t => t.date))];
+  const route = (nextView: string, nextFilter = "all") => `${base}?month=${month}&view=${nextView}&filter=${nextFilter}`;
   return (
     <div className="overview">
       {demo && (
         <div className="demo-banner">
           <span>
-            <b>Demo workspace</b> · Synthetic data. Changes stay in this
-            session.
+            <b>Demo workspace</b> · Synthetic data. Changes reset when you leave this view.
           </span>
           <Link href="/login">
             Sign in <ArrowRight size={14} />
@@ -140,30 +146,29 @@ export function MonthlyOverview({
         </div>
       )}
       <header className="overview-header">
-        <div>
-          <div className="eyebrow">YOUR MONTH, AT A GLANCE</div>
-          <h1>
-            A little clarity.
-            <br className="mobile-break" /> A lot more control.
-          </h1>
-          <p>Review what happened. Make room for what matters.</p>
-        </div>
+        <h1>{view === "transactions" ? "Transactions" : view === "analysis" ? "Spending plan" : view === "reflection" ? "Monthly reflection" : "Overview"}</h1>
         <div className="month-switch">
           <Link
             aria-label="Previous month"
-            href={`${base}?month=${shiftMonth(month, -1)}`}
+            href={`${base}?month=${shiftMonth(month, -1)}&view=${view}`}
           >
             <ChevronLeft size={18} />
           </Link>
           <span>{monthName(month)}</span>
           <Link
             aria-label="Next month"
-            href={`${base}?month=${shiftMonth(month, 1)}`}
+            href={`${base}?month=${shiftMonth(month, 1)}&view=${view}`}
           >
             <ChevronRight size={18} />
           </Link>
         </div>
       </header>
+      <nav className="workspace-tabs" aria-label="Monthly views">
+        <Link aria-current={view === "overview" ? "page" : undefined} href={route("overview")}>Overview</Link>
+        <Link aria-current={view === "transactions" ? "page" : undefined} href={route("transactions")}>Transactions</Link>
+        <Link aria-current={view === "analysis" ? "page" : undefined} href={route("analysis")}>Spending plan</Link>
+        <details><summary>More</summary><div className="more-menu"><Link href={`${base}/plans`}>Plans & shared money</Link><Link href={`${base}/import`}>Import CSV</Link><Link href={route("reflection")}>Monthly reflection</Link></div></details>
+      </nav>
       {notice && (
         <div role="status" className="notice">
           {notice}
@@ -192,49 +197,9 @@ export function MonthlyOverview({
               {data.partial}
             </div>
           )}
-          <div className="overview-grid">
+          {view === "overview" && <>
             <section className="surface spending-hero">
-              <div className="section-heading">
-                <h2>Monthly spending</h2>
-                <span className="soft-badge">
-                  {budget
-                    ? report.spending <= budget
-                      ? "Within plan"
-                      : "Over plan"
-                    : "No plan set"}
-                </span>
-              </div>
-              <div className="hero-amount">
-                {money(report.spending)}
-                <span>spent this month</span>
-              </div>
-              <div
-                className="spending-track"
-                role="img"
-                aria-label={`${money(report.spending)} spent of ${money(budget)} planned`}
-              >
-                <span
-                  style={{
-                    width: `${budget ? Math.min(100, (report.spending / budget) * 100) : 0}%`,
-                  }}
-                />
-              </div>
-              <div className="plan-summary">
-                <div>
-                  <span>Monthly plan</span>
-                  <strong>{budget ? money(budget) : "Not set"}</strong>
-                </div>
-                <div>
-                  <span>
-                    {report.spending > budget && budget
-                      ? "Over plan"
-                      : "Left in plan"}
-                  </span>
-                  <strong>
-                    {budget ? money(Math.abs(budget - report.spending)) : "—"}
-                  </strong>
-                </div>
-              </div>
+              <div className="summary-heading"><div><h2>Spending this month</h2><div className="hero-amount">{money(report.spending)}</div></div><div className="summary-reference"><span>Monthly plan</span><strong>{budget ? money(budget) : "Not set"}</strong><small>{budget ? `${money(Math.abs(budget-report.spending))} ${report.spending > budget ? "over plan" : "remaining"}` : "Set a plan in Spending plan"}</small></div></div>
               <div className="spending-chart">
                 <div className="chart-legend">
                   <span>
@@ -248,6 +213,7 @@ export function MonthlyOverview({
                 </div>
                 <svg
                   viewBox="0 0 600 110"
+                  preserveAspectRatio="none"
                   role="img"
                   aria-label="Cumulative report spending through the selected month"
                 >
@@ -266,7 +232,7 @@ export function MonthlyOverview({
                   )}
                   <path
                     d={`M0 100 ${daily.map((n, i) => `L${(i * 600) / (dayCount - 1)} ${100 - (n / max) * 85}`).join(" ")} L600 100 Z`}
-                    fill="#eaf2ec"
+                    fill="#f0f7f5"
                   />
                   <polyline
                     points={daily
@@ -276,7 +242,7 @@ export function MonthlyOverview({
                       )
                       .join(" ")}
                     fill="none"
-                    stroke="#24634e"
+                    stroke="#278577"
                     strokeWidth="2.5"
                   />
                 </svg>
@@ -286,65 +252,11 @@ export function MonthlyOverview({
                   <span>Month end</span>
                 </div>
               </div>
-              <div className="hero-foot">
-                <Leaf size={17} />
-                <span>
-                  {budget
-                    ? `${money(Math.max(0, budget - report.spending))} of planned spending remains. This is a budget, not an account balance.`
-                    : "Set a monthly category plan to give your spending a reference point."}
-                </span>
-              </div>
+              <p className="chart-caption">Report spending · Transfers excluded</p>
             </section>
-            <section className="surface review-panel">
-              <div className="section-heading">
-                <h2>
-                  Needs review <span className="count">{pending.length}</span>
-                </h2>
-                <span className="eyebrow">INBOX</span>
-              </div>
-              <p className="muted">A quick check keeps your month accurate.</p>
-              {pending.length ? (
-                <div className="review-rows">
-                  {pending.slice(0, 3).map((t) => (
-                    <button key={t.id} onClick={() => setSelected(t)}>
-                      <div className="review-icon">
-                        <CircleHelp size={18} />
-                      </div>
-                      <span>
-                        <b>{t.description}</b>
-                        <small>
-                          {t.attribution === "reimbursable"
-                            ? "Confirm your share"
-                            : "Check category & amount"}
-                        </small>
-                      </span>
-                      <strong>{money(minor(t.amount))}</strong>
-                      <ChevronRight size={16} />
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="caught-up">
-                  <Check size={28} />
-                  <h3>All caught up</h3>
-                  <p>Your transactions are ready for the month’s story.</p>
-                </div>
-              )}
-              <button
-                className="text-button"
-                onClick={() => {
-                  setFilter("pending");
-                  document
-                    .getElementById("activity")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }}
-              >
-                Review activity <ArrowRight size={15} />
-              </button>
-              <div className="review-note">
-                Log through your assistant. Use this space to check the details.
-              </div>
-            </section>
+            <Link className="review-link" href={route("transactions", "pending")}><span>Needs review</span><span>{pending.length}<ChevronRight size={16}/></span></Link>
+          </>}
+          {view === "analysis" && <div className="analysis-view">
             <section className="surface categories-panel">
               <div className="section-heading">
                 <h2>Where it went</h2>
@@ -364,10 +276,7 @@ export function MonthlyOverview({
                     className="category-row"
                     key={c.id}
                     onClick={() => {
-                      setFilter(c.id);
-                      document
-                        .getElementById("activity")
-                        ?.scrollIntoView({ behavior: "smooth" });
+                      router.push(route("transactions", c.id));
                     }}
                   >
                     <div>
@@ -456,14 +365,13 @@ export function MonthlyOverview({
                 </small>
               </div>
             </section>
-          </div>
-          <section className="surface activity-panel" id="activity">
+          </div>}
+          {(view === "overview" || view === "transactions") && <section className="surface activity-panel" id="activity">
             <div className="section-heading">
               <div>
-                <h2>Activity</h2>
-                <p className="muted">The details behind your month.</p>
+                <h2>{view === "overview" ? "Recent transactions" : filter === "pending" ? "Needs review" : "Transactions"}</h2>
               </div>
-              <select
+              {view === "overview" ? <Link href={route("transactions")}>See all <ChevronRight size={14}/></Link> : <select
                 aria-label="Filter activity"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
@@ -475,21 +383,9 @@ export function MonthlyOverview({
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </select>}
             </div>
-            {entries
-              .filter(
-                (t) =>
-                  filter === "all" ||
-                  (filter === "pending"
-                    ? t.review_status === "pending"
-                    : t.category_id === filter),
-              )
-              .sort(
-                (a, b) =>
-                  b.date.localeCompare(a.date) || a.id.localeCompare(b.id),
-              )
-              .map((t) => (
+            {days.map(date => <div className="transaction-day" key={date}><h3>{new Intl.DateTimeFormat("en", {weekday:"short", month:"short", day:"numeric",timeZone:"UTC"}).format(new Date(`${date}T00:00:00Z`))}</h3><div className="transaction-group">{shown.filter(t => t.date === date).map(t => (
                 <button
                   className="activity-row"
                   key={t.id}
@@ -507,7 +403,6 @@ export function MonthlyOverview({
                   <span className="activity-title">
                     <b>{t.description}</b>
                     <small>
-                      {t.date} ·{" "}
                       {data.accounts.find((a) => a.id === t.account_id)?.name ??
                         "Account"}
                     </small>
@@ -521,13 +416,13 @@ export function MonthlyOverview({
                   {t.review_status === "pending" && (
                     <span className="pending-dot" aria-label="Needs review" />
                   )}
-                  <strong>
-                    {t.type === "income" ? "+" : ""}
+                  <strong className={`value-${t.type}`}>
+                    {t.type === "income" ? "+" : t.type === "expense" ? "−" : ""}
                     {money(minor(t.amount))}
                   </strong>
                   <ChevronRight size={15} />
                 </button>
-              ))}
+              ))}</div></div>)}
             {!entries.some(
               (t) =>
                 filter === "all" ||
@@ -535,8 +430,8 @@ export function MonthlyOverview({
                   ? t.review_status === "pending"
                   : t.category_id === filter),
             ) && <p className="empty-copy">No transactions in this view.</p>}
-          </section>
-          <section className="surface reflection">
+          </section>}
+          {view === "reflection" && <section className="surface reflection">
             <div>
               <div className="eyebrow">MONTHLY REFLECTION</div>
               <h2>What will you carry into next month?</h2>
@@ -557,7 +452,7 @@ export function MonthlyOverview({
             <button className="solid-button" disabled={busy} onClick={savePlan}>
               Save reflection
             </button>
-          </section>
+          </section>}
           <footer className="overview-footer">
             <span>PHP · Asia/Manila · Report month basis</span>
             <span>
@@ -574,6 +469,7 @@ export function MonthlyOverview({
         <DialogContent className="inspection workflow-dialog">
           <DialogHeader>
             <DialogTitle>Transaction details</DialogTitle>
+            <DialogDescription>Review the amount, dates, category, and personal share.</DialogDescription>
           </DialogHeader>
           {selected && (
             <TransactionInspector
@@ -590,7 +486,7 @@ export function MonthlyOverview({
                 setSelected(null);
                 setNotice(
                   demo
-                    ? "Updated in this demo session only."
+                    ? "Updated in this demo view only."
                     : "Correction saved with an audit record.",
                 );
                 if (!demo) router.refresh();

@@ -1,20 +1,17 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
   ArrowLeftRight,
   Wallet,
-  PieChart,
   Target,
   Settings,
   LogOut,
   Menu,
-  Briefcase,
-  Repeat,
-  Sparkles,
+
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -24,14 +21,18 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/dashboard/transactions', label: 'Transactions', icon: ArrowLeftRight },
-  { href: '/dashboard/accounts', label: 'Accounts', icon: Wallet },
-  { href: '/dashboard/wallets', label: 'Wallets', icon: Briefcase },
-  { href: '/dashboard/plans', label: 'Plans & shared money', icon: Target },
-  { href: '/dashboard/import', label: 'Import studio', icon: ArrowLeftRight },
-  { href: '/dashboard/recurring', label: 'Recurring', icon: Repeat },
-  { href: '/dashboard/reports', label: 'Reports', icon: PieChart },
+  { href: '/dashboard?view=transactions', label: 'Transactions', icon: ArrowLeftRight },
   { href: '/dashboard/budgets', label: 'Budgets', icon: Target },
+  { href: '/dashboard/accounts', label: 'Accounts', icon: Wallet },
+]
+const tools = [
+  { href: '/dashboard/plans', label: 'Plans & shared money' },
+  { href: '/dashboard/import', label: 'Import CSV' },
+  { href: '/dashboard?view=reflection', label: 'Monthly reflection' },
+  { href: '/dashboard/reports', label: 'Reports' },
+  { href: '/dashboard/recurring', label: 'Recurring' },
+  { href: '/dashboard/wallets', label: 'Wallets' },
+  { href: '/dashboard/transactions', label: 'Manual entry' },
 ]
 
 const bottomNavItems = [
@@ -40,6 +41,7 @@ const bottomNavItems = [
 
 function NavContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname = usePathname()
+  const search = useSearchParams()
   const router = useRouter()
   const supabase = createClient()
 
@@ -54,22 +56,22 @@ function NavContent({ onItemClick }: { onItemClick?: () => void }) {
       <nav className="flex-1 px-3 py-4">
         <div className="space-y-1">
           {navItems.map((item) => {
-            const isActive = pathname === item.href
+            const isActive = (search.get('view') ? `${pathname}?view=${search.get('view')}` : pathname) === item.href
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={onItemClick}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group',
+                  'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm group',
                   isActive
-                    ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                    ? 'bg-accent text-primary'
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 )}
               >
                 <item.icon className={cn(
                   'h-5 w-5 transition-transform duration-200',
-                  !isActive && 'group-hover:scale-110'
+                  !isActive && ''
                 )} />
                 <span className={cn(
                   'font-medium',
@@ -81,27 +83,31 @@ function NavContent({ onItemClick }: { onItemClick?: () => void }) {
             )
           })}
         </div>
+        <details className="mt-7 px-3 text-sm text-muted-foreground" open={tools.some(t => t.href === pathname)}>
+          <summary className="cursor-pointer py-2">Tools</summary>
+          {tools.map(item => <Link className="block py-2.5" key={item.href} href={item.href} onClick={onItemClick}>{item.label}</Link>)}
+        </details>
       </nav>
 
       {/* Bottom Section */}
       <div className="px-3 py-4 border-t border-border/50">
         {bottomNavItems.map((item) => {
-          const isActive = pathname === item.href
+          const isActive = (search.get('view') ? `${pathname}?view=${search.get('view')}` : pathname) === item.href
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={onItemClick}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group',
+                'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm group',
                 isActive
-                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                  ? 'bg-accent text-primary'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )}
             >
               <item.icon className={cn(
                 'h-5 w-5 transition-transform duration-200',
-                !isActive && 'group-hover:scale-110'
+                !isActive && ''
               )} />
               <span className={cn(
                 'font-medium',
@@ -126,19 +132,7 @@ function NavContent({ onItemClick }: { onItemClick?: () => void }) {
   )
 }
 
-function Logo() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25">
-        <Sparkles className="h-5 w-5 text-primary-foreground" />
-      </div>
-      <div>
-        <h1 className="text-lg font-bold text-foreground tracking-tight">Finance</h1>
-        <p className="text-[10px] text-muted-foreground font-medium -mt-0.5 tracking-wide uppercase">Tracker</p>
-      </div>
-    </div>
-  )
-}
+function Logo() { return <div className="text-xl font-semibold tracking-tight">Finance</div> }
 
 export function Sidebar() {
   const [open, setOpen] = useState(false)
@@ -150,7 +144,7 @@ export function Sidebar() {
         <Logo />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-xl hover:bg-accent">
+            <Button aria-label="Open navigation" variant="ghost" size="icon" className="rounded-xl hover:bg-accent">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
@@ -164,7 +158,7 @@ export function Sidebar() {
       </header>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 bg-sidebar border-r border-sidebar-border h-screen flex-col fixed left-0 top-0">
+      <aside className="hidden lg:flex w-56 bg-sidebar border-r border-sidebar-border h-screen flex-col fixed left-0 top-0">
         <div className="p-5 border-b border-sidebar-border/50">
           <Logo />
         </div>
@@ -172,7 +166,7 @@ export function Sidebar() {
       </aside>
       
       {/* Spacer for fixed sidebar */}
-      <div className="hidden lg:block w-64 flex-shrink-0" />
+      <div className="hidden lg:block w-56 flex-shrink-0" />
     </>
   )
 }

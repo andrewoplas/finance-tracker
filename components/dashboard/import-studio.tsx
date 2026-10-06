@@ -165,8 +165,7 @@ export function ImportStudio({ demo = false }: { demo?: boolean }) {
       </Link>
       <header className="overview-header">
         <div>
-          <div className="eyebrow">IMPORT STUDIO</div>
-          <h1>Give your history a clean start.</h1>
+          <h1>Import CSV</h1>
           <p>
             Map your export, review each row, and match the closing statement.
           </p>

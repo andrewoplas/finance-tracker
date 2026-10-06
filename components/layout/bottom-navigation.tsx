@@ -1,19 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { Home, ArrowLeftRight, Wallet, Briefcase } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const navItems = [
   {
-    name: 'Dashboard',
+    name: 'Overview',
     href: '/dashboard',
     icon: Home,
   },
   {
     name: 'Transactions',
-    href: '/dashboard/transactions',
+    href: '/dashboard?view=transactions',
     icon: ArrowLeftRight,
   },
   {
@@ -30,12 +30,13 @@ const navItems = [
 
 export function BottomNavigation() {
   const pathname = usePathname()
+  const search = useSearchParams()
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/50 lg:hidden safe-area-bottom">
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
-          const isActive = pathname === item.href
+          const isActive = (search.get('view') ? `${pathname}?view=${search.get('view')}` : pathname) === item.href
           const Icon = item.icon
 
           return (

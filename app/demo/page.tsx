@@ -3,16 +3,14 @@ import { demoEntries, demoCategories } from "@/lib/finance/demo";
 import { monthOnly } from "@/lib/finance/core";
 import Link from "next/link";
 import {
-  Leaf,
   LayoutDashboard,
   ArrowLeftRight,
   CalendarDays,
-  Settings2,
 } from "lucide-react";
 export default async function DemoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; view?: string; filter?: string }>;
 }) {
   const query = await searchParams;
   const month = monthOnly.safeParse(query.month).success
@@ -21,39 +19,21 @@ export default async function DemoPage({
   return (
     <div className="demo-shell">
       <aside className="demo-sidebar">
-        <Link className="demo-logo" href="/demo">
-          <Leaf /> ledger<span>Personal finance, considered.</span>
-        </Link>
-        <nav>
-          <Link className="active" href={`/demo?month=${month}`}>
-            <LayoutDashboard size={18} /> Overview
-          </Link>
-          <a href="#activity">
-            <ArrowLeftRight size={18} /> Activity
-          </a>
-          <Link href="/demo/plans">
-            <CalendarDays size={18} /> Plans
-          </Link>
-          <Link href="/demo/import">
-            <ArrowLeftRight size={18} /> Import studio
-          </Link>
-          <Link href="/login">
-            <Settings2 size={18} /> Sign in
-          </Link>
+        <Link className="demo-logo" href="/demo">Finance</Link>
+        <nav aria-label="Main navigation">
+          <Link className={!query.view || query.view === "overview" ? "active" : ""} href={`/demo?month=${month}`}><LayoutDashboard size={18}/> Overview</Link>
+          <Link className={query.view === "transactions" ? "active" : ""} href={`/demo?month=${month}&view=transactions`}><ArrowLeftRight size={18}/> Transactions</Link>
+          <Link className={query.view === "analysis" ? "active" : ""} href={`/demo?month=${month}&view=analysis`}><CalendarDays size={18}/> Spending plan</Link>
+          <div className="nav-secondary-label">Tools</div>
+          <Link href="/demo/plans">Plans & shared money</Link>
+          <Link href="/demo/import">Import CSV</Link>
+          <Link href={`/demo?month=${month}&view=reflection`}>Monthly reflection</Link>
         </nav>
-        <div className="sidebar-note">
-          <span className="soft-badge">PREVIEW</span>
-          <p>A calmer place to understand your money.</p>
-          <small>
-            Synthetic data only.
-            <br />
-            No account connection.
-          </small>
-        </div>
+        <div className="sidebar-note"><small>Synthetic preview<br/>No account connected</small><Link href="/login">Sign in</Link></div>
       </aside>
       <main>
         <MonthlyOverview
-          key={month}
+          key={`${month}-${query.view}-${query.filter}`} view={["overview", "transactions", "analysis", "reflection"].includes(query.view ?? "") ? query.view : "overview"} initialFilter={query.filter}
           demo
           month={month}
           data={{
@@ -83,24 +63,7 @@ export default async function DemoPage({
           }}
         />
       </main>
-      <nav className="demo-mobile-nav">
-        <Link href="/demo">
-          <LayoutDashboard size={18} />
-          Overview
-        </Link>
-        <a href="#activity">
-          <ArrowLeftRight size={18} />
-          Activity
-        </a>
-        <Link href="/demo/import">
-          <CalendarDays size={18} />
-          Import
-        </Link>
-        <Link href="/login">
-          <Settings2 size={18} />
-          Sign in
-        </Link>
-      </nav>
+
     </div>
   );
 }

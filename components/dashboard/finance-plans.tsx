@@ -187,8 +187,7 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
     <div className="overview workflow-page">
       <header className="overview-header">
         <div>
-          <div className="eyebrow">PLANS & SHARED MONEY</div>
-          <h1>A plan for the next little steps.</h1>
+          <h1>Plans & shared money</h1>
           <p>
             Keep bills, repayments, and balances clear—without counting them
             twice.

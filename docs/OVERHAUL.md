@@ -84,7 +84,7 @@ Tests use only fresh synthetic PGlite PostgreSQL. They exercise all six migratio
 - No live session, production migration, PostgREST integration, deployment, push, new credential, or external MCP/OAuth setup was performed. Those remain separate rollout/setup work requiring authorization.
 - Native BudgetFlow export layout remains unverified without a representative synthetic/anonymized file. Category starts uncategorized on import for later review. The UI currently requires normalized headers.
 - Investments/net worth, FX/multi-currency, interest amortization, automatic bank synchronization, a paid-date cashflow report, budget rollover, and pagination beyond the bounded workspace are outside this milestone.
-- Application visual QA is pending. The in-app browser became available during follow-up verification and rendered `/demo`; interaction/responsive checks have not yet been completed. Native Chrome acquisition previously stalled and is not being retried.
+- Synthetic desktop/mobile visual QA completed in the supported in-app browser; see the UI simplification verification below. Live authenticated UI remains unverified. Native Chrome acquisition previously stalled and was not retried.
 - Next.js and matching lint config were updated from 16.1.4 to 16.3.8, plus compatible security updates. Five high development-only findings remain in the eslint-config-next → fast-glob → micromatch → braces chain. npm's forced suggestion downgrades lint config to 14.2.35; that breaking downgrade was not applied. Recheck advisories before rollout.
 
 ## Design basis
@@ -117,3 +117,19 @@ The user rejected the existing prototype's typography, colors, and density. The 
 The authorized BudgetFlow CSV was not found by filename in accessible current-home Documents/Downloads/Desktop searches. The corresponding October 4 task directory was absent; the previously supplied original-home file path remained unreadable after an authorized read-only attempt. No actual export headers or rows were read, so native adapter compatibility and real totals remain unverified. No guessed native-format adapter was added.
 
 Transport audit: the implemented interface is cookie-authenticated REST. There is no MCP JSON-RPC initialize/tools-list/tools-call transport, MCP session lifecycle, or MCP authentication/discovery setup. A future adapter must bind authenticated owner context, expose narrow validated contracts, preserve preview/commit and idempotency semantics, and test protocol/auth failure paths. Existing REST routes alone do not constitute a connected MCP integration. No credentials or grants were created.
+
+## Budget Flow-derived UI simplification implemented
+
+The overview now uses a continuous white workspace, neutral gray sidebar, native system font stack, restrained teal actions, and signed semantic amount colors. It presents one spending summary/chart, one review-count link, and five recent transactions grouped by date. Promotional headings, competing overview cards, and duplicate desktop demo navigation were removed. Category planning and commitments are in Spending plan; reflection, plans/shared money, and CSV import remain secondary destinations. The dashboard retains legacy manual entry and other management tools. No financial contracts or database operations changed.
+
+Verification after the visual pass:
+
+- All 13 automated finance tests passed; final typecheck, lint, and production build passed. Lint retains 16 pre-existing unused-code warnings. `git diff --check` passed.
+- Supported in-app browser tested synthetic desktop and 390×844 mobile layouts. No horizontal document overflow on overview, CSV preview, or transaction dialog.
+- Previous/next month navigation verified September/October labels. Review count opens pending-only Transactions; marking both synthetic items reviewed produces the empty state. Category filtering displayed only matching entries.
+- Transaction dialog validates a zero amount without saving. Raw schema JSON was replaced with readable validation text; a missing accessible dialog description was added. Final browser error log was empty.
+- CSV preview identifies the synthetic duplicate and unmapped transfer exception; save remains disabled without a connected ledger. Plans shows explicit empty states and no connected ledger. These checks do not verify persisted backend workflows through a browser.
+- Screenshots outside the repository: `../finance-qa/overview-desktop.jpg`, `overview-mobile.jpg`, `review-confirmed.jpg`, `review-empty.jpg`, and `mobile-validation.jpg`. All contain synthetic application data only. The overview screenshots reflect the final visual design; review screenshots document the checked interaction states.
+- Local preview: `http://127.0.0.1:4317/demo`. Demo edits reset when leaving the view, now explicitly stated in the UI. No push, deployment, live data changes, credentials, or grants.
+
+Loading/partial/server-error rendering remains implemented but was not fault-injected in browser QA. The inspected validation error and empty states are the browser-verified error/empty coverage. The original BudgetFlow export and live Supabase access remain unverified; REST remains REST, not an MCP connection.

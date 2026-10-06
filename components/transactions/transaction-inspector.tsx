@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { ZodError } from "zod";
 import { entrySchema, type LedgerEntry } from "@/lib/finance/core";
 import { commitOperation } from "@/lib/finance/client";
 import type { Operation } from "@/lib/finance/contracts";
@@ -59,7 +60,7 @@ export function TransactionInspector({
       const result = response.result as { revision: number };
       onSaved({ ...parsed, id, revision: result.revision });
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Could not save");
+      setMessage(e instanceof ZodError ? e.issues.map(issue => issue.message).join(". ") : e instanceof Error ? e.message : "Could not save");
     } finally {
       setBusy(false);
     }

@@ -21,10 +21,11 @@ export function TransactionInspector({
   creating?: boolean;
   accounts?: { id: string; name: string }[];
   entry: LedgerEntry;
-  categories: { id: string; name: string }[];
+  categories: { id: string; name: string; type?: string }[];
   demo: boolean;
   onSaved: (entry: LedgerEntry | null) => void;
 }) {
+  const [categoryQuery,setCategoryQuery] = useState("");
   const [draft, setDraft] = useState(entry),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
@@ -123,7 +124,7 @@ export function TransactionInspector({
     label: string,
     type = "text",
   ) => (
-    <label className="workflow-field">
+    <label className={`workflow-field ${creating && key === "amount" ? "entry-amount" : ""}`}>
       {label}
       <input
         type={type}
@@ -143,19 +144,19 @@ export function TransactionInspector({
   );
   return (
     <>
-      <form className="workflow-form" onSubmit={save}>
+      <form className={`workflow-form ${creating ? "amount-first-form" : ""}`} onSubmit={save}>
         <p className="muted">
           {creating ? "Manual entry" : `${entry.type} · Revision ${entry.revision}`}
           {demo ? " · Changes stay in this demo" : ""}
         </p>
-        {creating && <><label className="workflow-field">Type<select value={draft.type} onChange={e => setDraft(d=>({...d,type:e.target.value as "expense"|"income",category_id:null,attribution:"personal",personal_amount:"0.00"}))}><option value="expense">Expense</option><option value="income">Income</option></select></label><label className="workflow-field">Account<select value={draft.account_id} onChange={e=>change("account_id",e.target.value)}>{accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label></>}
+        {creating && <><div className="entry-type-switch" aria-label="Transaction type">{(["expense","income"] as const).map(type=><button type="button" key={type} aria-pressed={draft.type===type} onClick={()=>setDraft(d=>({...d,type,category_id:null,attribution:"personal",personal_amount:"0.00"}))}>{type==="expense"?"Expense":"Income"}</button>)}</div>{field("amount", "Amount (PHP)")}<label className="workflow-field">Account<select value={draft.account_id} onChange={e=>change("account_id",e.target.value)}>{accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label></>}
         {field("description", "Description")}
-        {field("amount", "Amount (PHP)")}
+        {!creating && field("amount", "Amount (PHP)")}
         {field("date", "Purchase / transaction date", "date")}
         {creating ? <details><summary>Reporting & billing dates</summary><div className="workflow-form mt-3">{field("report_month", "Report month", "month")}{field("bill_date", "Bill date (optional)", "date")}{field("paid_date", "Paid date (optional)", "date")}</div></details> : <>{field("report_month", "Report month", "month")}{field("bill_date", "Bill date (optional)", "date")}{field("paid_date", "Paid date (optional)", "date")}</>}
         {draft.type === "expense" && (
           <>
-            <label className="workflow-field">
+            {creating ? <details className="category-picker"><summary>Category <b>{categories.find(c=>c.id===draft.category_id)?.name??"Uncategorized"}</b></summary><input aria-label="Search categories" placeholder="Search categories" value={categoryQuery} onChange={e=>setCategoryQuery(e.target.value)}/><div className="category-options" role="group" aria-label="Expense categories">{[{id:"",name:"Uncategorized"},...categories.filter(c=>!c.type||c.type===draft.type)].filter(c=>c.name.toLowerCase().includes(categoryQuery.toLowerCase())).map(c=><button type="button" key={c.id} aria-pressed={(draft.category_id??"")===c.id} onClick={()=>change("category_id",c.id||null)}>{c.name}<span>{(draft.category_id??"")===c.id?"✓":""}</span></button>)}</div></details> : <label className="workflow-field">
               Expense category
               <select
                 value={draft.category_id ?? ""}
@@ -168,7 +169,7 @@ export function TransactionInspector({
                   </option>
                 ))}
               </select>
-            </label>
+            </label>}
             <label className="workflow-field">
               Whose expense?
               <select

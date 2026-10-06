@@ -17,7 +17,7 @@ export function BottomNavigation({demo=false}:{demo?:boolean}){
  const [liveContext,setContext]=useState<Context|null>(null),[error,setError]=useState('');
  const context=demo?{accounts:[{id:'10000000-0000-4000-8000-000000000001',name:'Everyday account'}],categories:demoCategories}:liveContext;
  const month=search.get('month'),suffix=month?`month=${month}&`:'';
- const tabs=[{name:'Overview',href:`${base}?${suffix}view=overview`,icon:Home,active:pathname===base&&(!search.get('view')||search.get('view')==='overview')},{name:'Transactions',href:`${base}?${suffix}view=transactions`,icon:ArrowLeftRight,active:pathname===base&&search.get('view')==='transactions'},{name:'Plans',href:`${base}/plans`,icon:CalendarDays,active:pathname===`${base}/plans`}];
+ const tabs=[{name:'Overview',href:`${base}?${suffix}view=overview`,icon:Home,active:pathname===base&&(!search.get('view')||search.get('view')==='overview')},{name:'Transactions',href:`${base}?${suffix}view=transactions`,icon:ArrowLeftRight,active:pathname===base&&search.get('view')==='transactions'},{name:'Plans',href:`${base}?${suffix}view=analysis`,icon:CalendarDays,active:pathname===base&&search.get('view')==='analysis'}];
  useEffect(()=>{
   if(!open)return;
   let active=true;

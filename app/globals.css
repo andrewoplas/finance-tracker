@@ -601,3 +601,34 @@ button:focus-visible,a:focus-visible,summary:focus-visible { outline:2px solid v
  .overview-header { margin-top:20px; gap:14px; }
  .month-switch a { min-width:44px; min-height:44px; }
 }
+
+/* BudgetFlow interaction cues, adapted from the reviewed design brief. */
+.period-chip { background:#fff; border-radius:999px; padding:10px 16px; min-height:44px; cursor:pointer; }
+.period-sheet { max-height:85dvh; padding-bottom:env(safe-area-inset-bottom); }
+.period-content { padding:0 20px 24px; overflow:auto; }
+.period-content input { padding:12px; border:1px solid #ddd; border-radius:12px; font-size:16px; }
+.month-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:18px; }
+.month-grid button { min-height:48px; padding:12px; border-radius:12px; background:#f2f2f2; display:flex; justify-content:space-between; align-items:center; }
+.month-grid button[aria-pressed=true] { background:#131313; color:#c6ff02; }
+.budget-remaining { color:#666; font-size:12px; margin-bottom:10px; }
+.entry-type-switch { display:flex; padding:4px; background:#f2f2f2; border-radius:999px; }
+.entry-type-switch button { flex:1; min-height:44px; border-radius:999px; font-size:14px; }
+.entry-type-switch button[aria-pressed=true] { background:#fff; color:#131313; font-weight:600; }
+.amount-first-form .entry-amount { text-align:center; }
+.amount-first-form .entry-amount input { border:0; font-size:42px; font-weight:650; letter-spacing:-1px; text-align:center; padding:4px; }
+.amount-first-form>.workflow-field:not(.entry-amount) { padding:10px 12px; background:#f6f6f6; border-radius:12px; }
+.amount-first-form>details { padding:12px; border-radius:12px; background:#f6f6f6; }
+.amount-first-form summary { min-height:44px; cursor:pointer; font-size:13px; }
+.category-picker summary { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.category-picker input { border:1px solid #ddd; padding:10px; border-radius:8px; width:100%; }
+.category-options { max-height:200px; overflow:auto; margin-top:8px; }
+.category-options button { display:flex; justify-content:space-between; width:100%; min-height:44px; padding:12px; font-size:14px; text-align:left; }
+.category-options button[aria-pressed=true] { background:#e9e9e9; border-radius:8px; }
+@media(max-width:800px) {
+ .transaction-group { background:transparent; padding:0; border-radius:0; }
+ .activity-row { padding:16px 0; }
+ .activity-title small { font-size:11px; }
+ .activity-row strong { font-variant-numeric:tabular-nums; }
+ .category-row { padding:18px 0; border-bottom:1px solid #eee; }
+ .category-track { height:4px; }
+}

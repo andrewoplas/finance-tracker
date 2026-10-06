@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import {PeriodPicker} from "./period-picker";
+import {activityDateLabel} from "@/lib/finance/date-label";
 import { useRouter } from "next/navigation";
 import { TransactionInspector } from "@/components/transactions/transaction-inspector";
 import {
@@ -164,7 +166,7 @@ export function MonthlyOverview({
           >
             <ChevronLeft size={18} />
           </Link>
-          <span>{monthName(month)}</span>
+          <PeriodPicker month={month}/>
           <Link
             aria-label="Next month"
             href={`${base}?month=${shiftMonth(month, 1)}&view=${view}`}
@@ -312,7 +314,8 @@ export function MonthlyOverview({
                         </small>
                       </span>
                     </div>
-                    <div className="category-track">
+                    <p className="budget-remaining">{minor(c.amount) ? `${money(Math.abs(minor(c.amount)-c.spent))} ${c.spent>minor(c.amount)?"over plan":"remaining"} of ${money(minor(c.amount))}` : "No budget set"}</p>
+                    <div className="category-track" role="progressbar" aria-label={`${c.name} budget used`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={minor(c.amount)?Math.min(100,Math.round(c.spent/minor(c.amount)*100)):0}>
                       <span
                         style={{
                           width: `${minor(c.amount) ? Math.min(100, (c.spent / minor(c.amount)) * 100) : 0}%`,
@@ -359,8 +362,8 @@ export function MonthlyOverview({
               ) : (
                 <p className="empty-copy">No upcoming commitments recorded.</p>
               )}
-              {!demo && (
-                <Link className="text-button" href="/dashboard/plans">
+              {(
+                <Link className="text-button" href={`${base}/plans?month=${month}`}>
                   Manage installments & repayments <ArrowRight size={14} />
                 </Link>
               )}
@@ -395,7 +398,7 @@ export function MonthlyOverview({
                 ))}
               </select>}
             </div>
-            {days.map(date => <div className="transaction-day" key={date}><h3>{new Intl.DateTimeFormat("en", {weekday:"short", month:"short", day:"numeric",timeZone:"UTC"}).format(new Date(`${date}T00:00:00Z`))}</h3><div className="transaction-group">{shown.filter(t => t.date === date).map(t => (
+            {days.map(date => <div className="transaction-day" key={date}><h3>{activityDateLabel(date)}</h3><div className="transaction-group">{shown.filter(t => t.date === date).map(t => (
                 <button
                   className="activity-row"
                   key={t.id}
@@ -413,7 +416,7 @@ export function MonthlyOverview({
                   <span className="activity-title">
                     <b>{t.description}</b>
                     <small>
-                      {data.accounts.find((a) => a.id === t.account_id)?.name ??
+                      {data.categories.find(c=>c.id===t.category_id)?.name ?? (t.type==="transfer"?"Transfer":"Uncategorized")} · {data.accounts.find((a) => a.id === t.account_id)?.name ??
                         "Account"}
                     </small>
                   </span>

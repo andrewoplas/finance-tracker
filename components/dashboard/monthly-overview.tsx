@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TransactionInspector } from "@/components/transactions/transaction-inspector";
@@ -76,6 +76,16 @@ export function MonthlyOverview({
   const [busy, setBusy] = useState(false);
   const [notes, setNotes] = useState(data.retro ?? "");
   const [filter, setFilter] = useState(initialFilter);
+  useEffect(() => {
+    if (!demo) return;
+    const added = (event: Event) => {
+      const entry = (event as CustomEvent<LedgerEntry>).detail;
+      if (entry.report_month === month) setEntries(current => [entry, ...current]);
+      setNotice("Saved in this demo view only.");
+    };
+    window.addEventListener("finance-demo-entry", added);
+    return () => window.removeEventListener("finance-demo-entry", added);
+  }, [demo, month]);
   const reportEntries = data.reportEntries ?? entries;
   const report = useMemo(
     () => monthlyReport(reportEntries, month),

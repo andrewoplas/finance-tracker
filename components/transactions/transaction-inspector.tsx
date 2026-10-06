@@ -15,7 +15,11 @@ export function TransactionInspector({
   categories,
   demo,
   onSaved,
+  creating = false,
+  accounts = [],
 }: {
+  creating?: boolean;
+  accounts?: { id: string; name: string }[];
   entry: LedgerEntry;
   categories: { id: string; name: string }[];
   demo: boolean;
@@ -50,13 +54,14 @@ export function TransactionInspector({
         onSaved({ ...parsed, id, revision: revision + 1 });
         return;
       }
-      const response = await commitOperation({
+      const response = await commitOperation(creating ? { action: "create", entries: [parsed] } : {
         action: "amend",
         id,
         expected_revision: revision,
         entry: parsed,
       });
       if (response.error) throw response.error;
+      if (creating) { onSaved(null); return; }
       const result = response.result as { revision: number };
       onSaved({ ...parsed, id, revision: result.revision });
     } catch (e) {
@@ -122,6 +127,7 @@ export function TransactionInspector({
       {label}
       <input
         type={type}
+        inputMode={key === "amount" || key === "personal_amount" ? "decimal" : undefined}
         value={draft[key] ?? ""}
         onChange={(e) =>
           change(
@@ -139,16 +145,15 @@ export function TransactionInspector({
     <>
       <form className="workflow-form" onSubmit={save}>
         <p className="muted">
-          {entry.type} · Revision {entry.revision}
+          {creating ? "Manual entry" : `${entry.type} · Revision ${entry.revision}`}
           {demo ? " · Changes stay in this demo" : ""}
         </p>
+        {creating && <><label className="workflow-field">Type<select value={draft.type} onChange={e => setDraft(d=>({...d,type:e.target.value as "expense"|"income",category_id:null,attribution:"personal",personal_amount:"0.00"}))}><option value="expense">Expense</option><option value="income">Income</option></select></label><label className="workflow-field">Account<select value={draft.account_id} onChange={e=>change("account_id",e.target.value)}>{accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label></>}
         {field("description", "Description")}
         {field("amount", "Amount (PHP)")}
         {field("date", "Purchase / transaction date", "date")}
-        {field("report_month", "Report month", "month")}
-        {field("bill_date", "Bill date (optional)", "date")}
-        {field("paid_date", "Paid date (optional)", "date")}
-        {entry.type === "expense" && (
+        {creating ? <details><summary>Reporting & billing dates</summary><div className="workflow-form mt-3">{field("report_month", "Report month", "month")}{field("bill_date", "Bill date (optional)", "date")}{field("paid_date", "Paid date (optional)", "date")}</div></details> : <>{field("report_month", "Report month", "month")}{field("bill_date", "Bill date (optional)", "date")}{field("paid_date", "Paid date (optional)", "date")}</>}
+        {draft.type === "expense" && (
           <>
             <label className="workflow-field">
               Expense category
@@ -179,21 +184,21 @@ export function TransactionInspector({
               field("personal_amount", "Your personal share (PHP)")}
           </>
         )}
-        <p className="muted">
+        {!creating && <p className="muted">
           Linked installment purchases and settlements are protected. Correct
           those in Plans; cancel unpaid allocations before changing their
           purchase.
-        </p>
+        </p>}
         {message && (
           <div role="alert" className="notice">
             {message}
           </div>
         )}
         <button className="solid-button" disabled={busy}>
-          {busy ? "Saving…" : "Save and mark reviewed"}
+          {busy ? "Saving…" : creating ? "Save transaction" : "Save and mark reviewed"}
         </button>
       </form>
-      {!demo && (
+      {!demo && !creating && (
         <div className="inspector-history">
           <button disabled={busy} className="text-button" onClick={loadHistory}>
             Load audit history

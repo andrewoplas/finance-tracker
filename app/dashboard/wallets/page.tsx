@@ -29,16 +29,16 @@ export default async function WalletsPage() {
           <div className="flex items-center gap-2 mt-1">
             <Briefcase className="h-4 w-4 text-muted-foreground" />
             <p className="text-muted-foreground">
-              Allocated: <span className="font-semibold text-foreground">{formatCurrency(totalWalletBalance)}</span>
+              Allocated: <span className="font-semibold text-foreground">{wallets.some(w=>w.opening_balance===null) ? 'Unknown' : formatCurrency(totalWalletBalance)}</span>
               <span className="mx-2 text-border">•</span>
-              <span className="text-sm">Ledger account total: {formatCurrency(totalAccountBalance)}</span>
+              <span className="text-sm">Ledger account total: {accountsRes.data.some(a=>a.opening_balance===null) ? 'Unknown' : formatCurrency(totalAccountBalance)}</span>
             </p>
           </div>
         </div>
         <AddWalletButton />
       </div>
 
-        {(wallets.some(w=>w.opening_balance===null)||accountsRes.data.some(a=>a.opening_balance===null))&&<div className="notice">Some opening balances need reconciliation. These are historical caches until verified.</div>}
+        {(wallets.some(w=>w.opening_balance===null)||accountsRes.data.some(a=>a.opening_balance===null))&&<div className="notice">Some opening balances need reconciliation. Balances remain Unknown until verified; expense history is available.</div>}
         {/* Wallet List */}
         <WalletList wallets={wallets} totalBalance={totalAccountBalance} />
       </div>

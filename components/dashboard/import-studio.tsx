@@ -19,6 +19,7 @@ export function ImportStudio({ demo = false }: { demo?: boolean }) {
   const [decisions, setDecisions] = useState<Record<number, Decision>>({}),
     [closings, setClosings] = useState<Record<string, string>>({}),
     [asOf, setAsOf] = useState(manilaToday());
+  const [historyOnly, setHistoryOnly] = useState(false);
   const [confirmed, setConfirmed] = useState(false),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState("");
@@ -110,13 +111,14 @@ export function ImportStudio({ demo = false }: { demo?: boolean }) {
         throw new Error("Choose a decision for every row.");
       const result = await commitOperation({
         action: "commit_import",
+        mode: historyOnly ? "history_only" : "reconciled",
         id: selected.id,
         expected_revision: selected.revision,
         decisions: selected.rows.map((r) => ({
           source_row: r.source_row,
           decision: decisions[r.source_row],
         })),
-        closing_balances: affected.map((id) => ({
+        closing_balances: historyOnly ? [] : affected.map((id) => ({
           account_id: id,
           as_of_date: asOf,
           balance: closings[id] ?? "",
@@ -415,7 +417,10 @@ export function ImportStudio({ demo = false }: { demo?: boolean }) {
           </div>
           {selected.state === "staged" && (
             <>
-              <h2 style={{ marginTop: 25 }}>3. Match your closing balances</h2>
+              <h2 style={{ marginTop: 25 }}>3. Import mode</h2>
+              <label className="review-confirm"><input type="checkbox" checked={historyOnly} onChange={e => { setHistoryOnly(e.target.checked); setConfirmed(false); }} />Import history only · balances remain Unknown</label>
+              {historyOnly ? <p className="notice">Use accounts with unknown opening balances. Income and expense history remains available; attribution needs review. No closing balance or net worth is asserted.</p> : <>
+              <h3>Match your closing balances</h3>
               <p className="muted">
                 Every affected account must have an opening baseline. Use{" "}
                 <Link className="text-button" href="/dashboard/plans#reconcile">
@@ -452,14 +457,14 @@ export function ImportStudio({ demo = false }: { demo?: boolean }) {
                   </label>
                 ))}
               </div>
+              </>}
               <label className="review-confirm">
                 <input
                   type="checkbox"
                   checked={confirmed}
                   onChange={(e) => setConfirmed(e.target.checked)}
                 />
-                I reviewed every include/skip decision and compared these
-                closing balances with my statements.
+                {historyOnly ? "I reviewed every include/skip decision. Balances and attribution remain unverified." : "I reviewed every include/skip decision and compared closing balances with my statements."}
               </label>
               <button
                 className="solid-button"

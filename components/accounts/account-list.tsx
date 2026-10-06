@@ -147,12 +147,12 @@ export function AccountList({ accounts, isArchived = false }: AccountListProps) 
                 
                 <div className="flex items-end justify-between">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">{account.opening_balance===null?'Cached balance · reconcile first':'Ledger balance'}</p>
+                    <p className="text-xs text-muted-foreground mb-1">{account.opening_balance===null?'Balance · needs reconciliation':'Ledger balance'}</p>
                     <p className={cn(
                       "text-2xl font-bold tabular-nums",
                       isNegative ? 'text-expense' : 'text-foreground'
                     )}>
-                      {formatCurrency(balance)}
+                      {account.opening_balance === null ? 'Unknown' : formatCurrency(balance)}
                     </p>
                   </div>
                   <div className={cn(

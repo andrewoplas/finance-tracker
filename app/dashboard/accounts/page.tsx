@@ -31,7 +31,7 @@ export default async function AccountsPage() {
           <div className="flex items-center gap-2 mt-1">
             <Wallet className="h-4 w-4 text-muted-foreground" />
             <p className="text-muted-foreground">
-              {activeAccounts.some(a=>a.opening_balance===null)?'Cached total · needs reconciliation:':'Ledger balance total:'} <span className="font-semibold text-foreground">{formatCurrency(totalBalance)}</span>
+              {activeAccounts.some(a=>a.opening_balance===null)?'Balance total:':'Ledger balance total:'} <span className="font-semibold text-foreground">{activeAccounts.some(a=>a.opening_balance===null) ? 'Unknown' : formatCurrency(totalBalance)}</span>
             </p>
           </div>
         </div>

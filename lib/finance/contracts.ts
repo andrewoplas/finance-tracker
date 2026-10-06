@@ -24,6 +24,7 @@ export const operationSchema = z.discriminatedUnion("action", [
   z
     .object({
       action: z.literal("commit_import"),
+      mode: z.enum(["reconciled", "history_only"]).optional(),
       ...target,
       decisions: z
         .array(

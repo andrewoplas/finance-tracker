@@ -49,6 +49,7 @@ export function AddAccountButton() {
       name,
       type,
       balance: parseFloat(balance) || 0,
+      opening_balance_unknown: balance.trim() === "",
       icon: accountType?.icon,
     })
 
@@ -112,12 +113,12 @@ export function AddAccountButton() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="balance">Initial Balance</Label>
+            <Label htmlFor="balance">Verified opening balance (optional)</Label>
             <Input
               id="balance"
               type="number"
               step="0.01"
-              placeholder="0.00"
+              placeholder="Leave blank if unknown"
               value={balance}
               onChange={(e) => setBalance(e.target.value)}
             />

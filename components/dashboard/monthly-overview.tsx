@@ -266,7 +266,7 @@ export function MonthlyOverview({
               </div>
               <p className="chart-caption">Report spending · Transfers excluded</p>
             </section>
-            <Link className="review-link" href={route("transactions", "pending")}><span>Needs review</span><span><b className="review-count">{pending.length}</b><ChevronRight size={16}/></span></Link>
+            <Link className="review-link" href={route("transactions", "pending")}><span>Needs review · includes attribution</span><span><b className="review-count">{pending.length}</b><ChevronRight size={16}/></span></Link>
           </>}
           {view === "analysis" && <div className="analysis-view">
             <section className="surface categories-panel">
@@ -371,7 +371,7 @@ export function MonthlyOverview({
                 <span>
                   Shared & reimbursable share <CircleHelp size={14} />
                 </span>
-                <b>{money(report.recoverable)}</b>
+                <b>{report.attribution_status === "unreviewed" ? "Needs review" : money(report.recoverable)}</b>
                 <small>
                   Allocated to others. Collection is tracked in Plans and is not
                   available cash.

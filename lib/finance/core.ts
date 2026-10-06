@@ -121,6 +121,7 @@ export function monthlyReport(entries: LedgerEntry[], month: string) {
     net: income + collected - spending,
     transfers: sum("transfer"),
     count: rows.length,
+    attribution_status: rows.some(t => t.review_status === "pending") ? "unreviewed" as const : "reviewed" as const,
   };
 }
 // Integer allocation keeps the purchase total exact; schedules are commitments, not expenses.

@@ -429,7 +429,7 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
                   <h3>
                     {a.name} <small>· {a.targetType}</small>
                   </h3>
-                  <b>{money(a.balance)}</b>
+                  <b>{a.opening_balance === null ? 'Unknown' : money(a.balance)}</b>
                   <p className="muted">
                     {a.opening_balance === null
                       ? "Opening balance needs reconciliation"
@@ -459,7 +459,7 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
                 .map((r) => (
                   <p className="muted" key={r.id}>
                     {r.as_of_date} · {r.after_row.name} ·{" "}
-                    {money(r.before_row.balance)} → {money(r.after_row.balance)}{" "}
+                    {r.before_row.opening_balance === null ? 'Unknown' : money(r.before_row.balance)} → {money(r.after_row.balance)}{" "}
                     · {r.reason}
                   </p>
                 ))}
@@ -679,8 +679,8 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
             {mode?.kind === "reconcile" && (
               <>
                 <p>
-                  {mode.target.name} · Current cached balance{" "}
-                  {money(mode.target.balance)}
+                  {mode.target.name} · Current balance{" "}
+                  {mode.target.opening_balance === null ? 'Unknown' : money(mode.target.balance)}
                 </p>
                 {field("date", "Statement / counted balance date", "date")}
                 {field("amount", "Observed closing balance (PHP)", "text", {

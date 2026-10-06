@@ -23,7 +23,7 @@ export function WalletList({
             {wallet.icon} {wallet.name}
           </h2>
           <p style={{ fontSize: 26, margin: "16px 0" }}>
-            {formatCurrency(Number(wallet.balance))}
+            {wallet.opening_balance === null ? 'Unknown' : formatCurrency(Number(wallet.balance))}
           </p>
           <p className="muted">
             {wallet.opening_balance === null

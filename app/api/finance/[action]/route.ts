@@ -1,3 +1,4 @@
+import { withVerifiedBalance } from "@/lib/finance/balances";
 import { createClient } from "@/lib/supabase/server";
 import { financialOperation } from "@/lib/finance/operation-service";
 import {
@@ -39,9 +40,9 @@ export async function GET(
       timezone: "Asia/Manila",
       currency: "PHP",
       today: manilaToday(),
-      accounts: results[0].data,
+      accounts: results[0].data?.map(withVerifiedBalance),
       categories: results[1].data,
-      wallets: results[2].data,
+      wallets: results[2].data?.map(withVerifiedBalance),
       integration:
         "Session-authenticated API; no external connector configured",
     });
@@ -79,7 +80,7 @@ export async function GET(
         422,
       );
     return json(
-      Object.fromEntries(tables.map((table, i) => [table, responses[i].data])),
+      Object.fromEntries(tables.map((table, i) => [table, ["accounts", "wallets"].includes(table) ? responses[i].data?.map(withVerifiedBalance) : responses[i].data])),
     );
   }
   if (action === "audit") {

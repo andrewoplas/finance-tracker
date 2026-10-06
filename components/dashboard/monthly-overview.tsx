@@ -219,20 +219,20 @@ export function MonthlyOverview({
                 >
                   <path
                     d="M0 95 H600 M0 50 H600"
-                    stroke="#e8ebe7"
+                    stroke="#e9e9e9"
                     fill="none"
                   />
                   {budget > 0 && (
                     <path
                       d={`M0 ${100 - (budget / max) * 85} H600`}
-                      stroke="#bcc9bf"
+                      stroke="#b8b8b8"
                       strokeDasharray="5 5"
                       fill="none"
                     />
                   )}
                   <path
                     d={`M0 100 ${daily.map((n, i) => `L${(i * 600) / (dayCount - 1)} ${100 - (n / max) * 85}`).join(" ")} L600 100 Z`}
-                    fill="#f0f7f5"
+                    fill="#f3f3f3"
                   />
                   <polyline
                     points={daily
@@ -242,7 +242,7 @@ export function MonthlyOverview({
                       )
                       .join(" ")}
                     fill="none"
-                    stroke="#278577"
+                    stroke="#131313"
                     strokeWidth="2.5"
                   />
                 </svg>
@@ -254,7 +254,7 @@ export function MonthlyOverview({
               </div>
               <p className="chart-caption">Report spending · Transfers excluded</p>
             </section>
-            <Link className="review-link" href={route("transactions", "pending")}><span>Needs review</span><span>{pending.length}<ChevronRight size={16}/></span></Link>
+            <Link className="review-link" href={route("transactions", "pending")}><span>Needs review</span><span><b className="review-count">{pending.length}</b><ChevronRight size={16}/></span></Link>
           </>}
           {view === "analysis" && <div className="analysis-view">
             <section className="surface categories-panel">

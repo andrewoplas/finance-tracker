@@ -1,0 +1,187 @@
+import { createClient } from "@/lib/supabase/server";
+import { requestSchema } from "@/lib/finance/contracts";
+import {
+  manilaToday,
+  monthlyReport,
+  monthOnly,
+  type LedgerEntry,
+} from "@/lib/finance/core";
+import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
+import { z } from "zod";
+
+const json = (body: unknown, status = 200) =>
+  NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ action: string }> },
+) {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )
+    return json({ error: "Database not configured" }, 503);
+  const db = await createClient();
+  const {
+    data: { user },
+  } = await db.auth.getUser();
+  if (!user) return json({ error: "Unauthorized" }, 401);
+  const { action } = await context.params;
+  const url = new URL(request.url);
+  if (action === "context") {
+    const results = await Promise.all(
+      ["accounts", "categories", "wallets"].map((table) =>
+        db.from(table).select("*").eq("user_id", user.id),
+      ),
+    );
+    if (results.some((r) => r.error))
+      return json({ error: "Context unavailable" }, 503);
+    return json({
+      timezone: "Asia/Manila",
+      currency: "PHP",
+      today: manilaToday(),
+      accounts: results[0].data,
+      categories: results[1].data,
+      wallets: results[2].data,
+      integration:
+        "Session-authenticated API; no external connector configured",
+    });
+  }
+  if (action === "audit") {
+    const id = z.uuid().safeParse(url.searchParams.get("id"));
+    if (!id.success) return json({ error: "Invalid transaction id" }, 400);
+    const { data, error } = await db
+      .from("financial_audit")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("transaction_id", id.data)
+      .order("id", { ascending: false })
+      .limit(25);
+    return error
+      ? json({ error: "Audit unavailable" }, 503)
+      : json({ items: data });
+  }
+  if (action === "search" || action === "report") {
+    const month = monthOnly.safeParse(url.searchParams.get("month"));
+    if (!month.success) return json({ error: "Valid month required" }, 400);
+    const { data, error } = await db
+      .from("transactions")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("report_month", month.data)
+      .order("date", { ascending: false })
+      .order("id")
+      .limit(1001);
+    if (error)
+      return json(
+        { error: "Ledger unavailable; migration may be required" },
+        503,
+      );
+    if (data.length > 1000)
+      return json(
+        {
+          error:
+            "Month exceeds supported report size; no partial totals returned",
+        },
+        422,
+      );
+    const entries = data.map((t) => ({
+      ...t,
+      amount: String(t.amount),
+      personal_amount: String(t.personal_amount),
+    })) as LedgerEntry[];
+    return json(
+      action === "report"
+        ? monthlyReport(entries, month.data)
+        : { items: entries, complete: true },
+    );
+  }
+  return json({ error: "Unknown contract" }, 404);
+}
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ action: string }> },
+) {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )
+    return json({ error: "Database not configured" }, 503);
+  const origin = request.headers.get("origin");
+  if (origin && origin !== new URL(request.url).origin)
+    return json({ error: "Origin rejected" }, 403);
+  const db = await createClient();
+  const {
+    data: { user },
+  } = await db.auth.getUser();
+  if (!user) return json({ error: "Unauthorized" }, 401);
+  const { action } = await context.params;
+  if (!["preview", "commit", "retro"].includes(action))
+    return json({ error: "Unknown contract" }, 404);
+  const text = await request.text();
+  if (text.length > 100000) return json({ error: "Request too large" }, 413);
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    return json({ error: "Invalid JSON" }, 400);
+  }
+  if (action === "retro") {
+    const parsed = z
+      .object({ month: monthOnly, notes: z.string().max(5000) })
+      .strict()
+      .safeParse(body);
+    if (!parsed.success) return json({ error: "Invalid plan" }, 400);
+    const { error } = await db
+      .from("retro_plans")
+      .upsert({
+        user_id: user.id,
+        ...parsed.data,
+        updated_at: new Date().toISOString(),
+      });
+    return error
+      ? json({ error: "Could not save plan" }, 503)
+      : json({ saved: true });
+  }
+  const parsed = requestSchema.safeParse(body);
+  if (!parsed.success)
+    return json(
+      { error: "Invalid financial operation", issues: parsed.error.flatten() },
+      400,
+    );
+  const payload = parsed.data;
+  // Canonical validated payload is identical for preview and commit. Preview performs no writes.
+  const digest = createHash("sha256")
+    .update(JSON.stringify(payload.operation))
+    .digest("hex");
+  if (action === "preview")
+    return json({
+      request_id: payload.request_id,
+      operation: payload.operation,
+      digest,
+      warnings: [
+        "Confirm account, dates, allocation and amount before committing. Ownership and revisions are checked atomically at commit.",
+      ],
+      persisted: false,
+    });
+  if (request.headers.get("x-finance-preview") !== digest)
+    return json(
+      { error: "Preview this exact operation before committing" },
+      409,
+    );
+  const { data, error } = await db.rpc("commit_financial_operation", {
+    request_id: payload.request_id,
+    operation: payload.operation,
+  });
+  if (error)
+    return json(
+      {
+        error:
+          error.code === "40001"
+            ? "Revision changed. Reload and review again."
+            : "Operation rejected. Check references and idempotency key; database migration may be required.",
+      },
+      error.code === "40001" ? 409 : 422,
+    );
+  return json({ result: data, persisted: true });
+}

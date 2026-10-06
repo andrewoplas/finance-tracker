@@ -181,7 +181,7 @@ export function AddRecurringButton() {
           {/* Frequency */}
           <div className="space-y-2">
             <Label>Frequency</Label>
-            <Select value={frequency} onValueChange={(v: any) => setFrequency(v)}>
+            <Select value={frequency} onValueChange={(v) => setFrequency(v as 'daily' | 'weekly' | 'monthly' | 'yearly')}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

@@ -68,8 +68,8 @@ export function RecentTransactions() {
         ) : (
           <div className="space-y-1">
             {transactions.map((transaction, index) => {
-              const category = transaction.category as any
-              const account = transaction.account as any
+              const category = transaction.category
+              const account = transaction.account
               
               return (
                 <div

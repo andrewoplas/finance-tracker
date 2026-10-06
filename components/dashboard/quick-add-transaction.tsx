@@ -1,5 +1,8 @@
 'use client'
 
+import { createEntries } from '@/lib/finance/client'
+import { manilaToday } from '@/lib/finance/core'
+
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -44,7 +47,7 @@ export function QuickAddTransaction() {
   const [walletId, setWalletId] = useState('')
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(manilaToday())
   const [toAccountId, setToAccountId] = useState('')
 
   const supabase = createClient()
@@ -91,13 +94,13 @@ export function QuickAddTransaction() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const { error } = await supabase.from('transactions').insert({
+    const { error } = await createEntries({
       user_id: user.id,
       account_id: accountId,
       category_id: type === 'transfer' ? null : categoryId || null,
       wallet_id: walletId || null,
       type,
-      amount: parseFloat(amount),
+      amount,
       description: description || null,
       date,
       to_account_id: type === 'transfer' ? toAccountId : null,
@@ -122,7 +125,7 @@ export function QuickAddTransaction() {
     setWalletId('')
     setAmount('')
     setDescription('')
-    setDate(new Date().toISOString().split('T')[0])
+    setDate(manilaToday())
     setToAccountId('')
     setLoading(false)
   }

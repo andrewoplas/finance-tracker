@@ -37,6 +37,7 @@ export interface Category {
 }
 
 export interface Transaction {
+  revision: number
   id: string
   user_id: string
   account_id: string

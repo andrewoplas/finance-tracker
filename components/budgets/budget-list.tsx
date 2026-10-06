@@ -53,7 +53,7 @@ export function BudgetList({ budgets, spentByCategory }: BudgetListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {budgets.map((budget) => {
-        const category = budget.category as any
+        const category = budget.category
         const spent = spentByCategory[budget.category_id] || 0
         const percentage = Math.min((spent / Number(budget.amount)) * 100, 100)
         const isOverBudget = spent > Number(budget.amount)

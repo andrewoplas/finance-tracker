@@ -1,3 +1,5 @@
+> Local overhaul: start with `/demo` for a synthetic, credential-free monthly review workspace. Read [implementation and rollout notes](docs/OVERHAUL.md) before applying migrations or enabling persisted writes. Import studio currently stages rows only; no external assistant integration is connected.
+
 # 💰 Finance Tracker
 
 A personal finance management app built with Next.js 14, Supabase, and Tailwind CSS.

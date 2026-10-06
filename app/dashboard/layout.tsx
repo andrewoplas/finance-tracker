@@ -1,6 +1,7 @@
 import { Sidebar } from '@/components/layout/sidebar'
 import { BottomNavigation } from '@/components/layout/bottom-navigation'
-import { MobileFAB } from '@/components/layout/mobile-fab'
+
+export const dynamic = 'force-dynamic'
 
 export default function DashboardLayout({
   children,
@@ -13,7 +14,7 @@ export default function DashboardLayout({
       <Sidebar />
       
       {/* Main Content */}
-      <main className="flex-1 overflow-auto pb-20 md:pb-0 md:p-5 lg:p-8 mt-16 md:mt-0">
+      <main className="flex-1 overflow-auto pb-20 lg:pb-0 md:p-5 lg:p-8 mt-16 lg:mt-0">
         <div className="max-w-7xl mx-auto">
           {children}
         </div>
@@ -23,7 +24,7 @@ export default function DashboardLayout({
       <BottomNavigation />
       
       {/* Mobile: Floating Action Button */}
-      <MobileFAB />
+
     </div>
   )
 }

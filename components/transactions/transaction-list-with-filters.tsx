@@ -34,8 +34,8 @@ export function TransactionListWithFilters({
       if (filters.search) {
         const searchLower = filters.search.toLowerCase()
         const matchesDescription = t.description?.toLowerCase().includes(searchLower)
-        const matchesCategory = (t.category as any)?.name?.toLowerCase().includes(searchLower)
-        const matchesAccount = (t.account as any)?.name?.toLowerCase().includes(searchLower)
+        const matchesCategory = t.category?.name?.toLowerCase().includes(searchLower)
+        const matchesAccount = t.account?.name?.toLowerCase().includes(searchLower)
         const matchesAmount = t.amount?.toString().includes(searchLower) || false
         
         if (!matchesDescription && !matchesCategory && !matchesAccount && !matchesAmount) {
@@ -69,10 +69,10 @@ export function TransactionListWithFilters({
         t.date,
         t.type,
         t.amount,
-        (t.category as any)?.name || '',
-        (t.account as any)?.name || '',
+        t.category?.name || '',
+        t.account?.name || '',
         t.description || '',
-        (t.wallet as any)?.name || '',
+        t.wallet?.name || '',
       ].map(field => `"${field}"`).join(','))
     ]
 

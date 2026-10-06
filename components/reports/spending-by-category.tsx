@@ -25,7 +25,7 @@ export function SpendingByCategory({ transactions }: SpendingByCategoryProps) {
   const categoryTotals: Record<string, { name: string; amount: number; color: string; icon: string }> = {}
 
   currentMonth.forEach((t) => {
-    const category = t.category as any
+    const category = t.category
     const categoryName = category?.name || 'Uncategorized'
     if (!categoryTotals[categoryName]) {
       categoryTotals[categoryName] = {

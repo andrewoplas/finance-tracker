@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { createClient } from '@/lib/supabase/client'
+import { commitOperation } from '@/lib/finance/client'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -22,22 +22,21 @@ interface TransactionListProps {
 }
 
 export function TransactionList({ transactions }: TransactionListProps) {
-  const supabase = createClient()
   const router = useRouter()
 
   const handleDelete = async (transaction: Transaction) => {
-    if (!confirm('Are you sure you want to delete this transaction?')) {
+    if (!confirm('Reverse this transaction? It will remain in audit history.')) {
       return
     }
 
-    const { error } = await supabase.from('transactions').delete().eq('id', transaction.id)
+    const { error } = await commitOperation({ action: 'reverse', id: transaction.id, expected_revision: transaction.revision })
 
     if (error) {
       toast.error('Failed to delete transaction')
       return
     }
 
-    toast.success('Transaction deleted')
+    toast.success('Transaction reversed')
     router.refresh()
   }
 
@@ -74,9 +73,9 @@ export function TransactionList({ transactions }: TransactionListProps) {
           <Card className="overflow-hidden">
             <CardContent className="divide-y divide-border/50 p-0">
               {dayTransactions.map((transaction) => {
-                const category = transaction.category as any
-                const account = transaction.account as any
-                const toAccount = transaction.to_account as any
+                const category = transaction.category
+                const account = transaction.account
+                const toAccount = transaction.to_account
                 
                 return (
                   <SwipeableTransactionItem

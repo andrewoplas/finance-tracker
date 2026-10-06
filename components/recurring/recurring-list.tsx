@@ -1,4 +1,6 @@
 'use client'
+import { commitOperation } from '@/lib/finance/client'
+import { manilaToday } from '@/lib/finance/core'
 
 import { RecurringTransaction } from '@/types/database'
 import { Card, CardContent } from '@/components/ui/card'
@@ -40,48 +42,8 @@ export function RecurringList({ recurring }: RecurringListProps) {
   }
 
   const handleProcessNow = async (item: RecurringTransaction) => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    // Create the transaction
-    const { error } = await supabase.from('transactions').insert({
-      user_id: user.id,
-      account_id: item.account_id,
-      category_id: item.category_id,
-      type: item.type,
-      amount: item.amount,
-      description: item.description,
-      date: new Date().toISOString().split('T')[0],
-      is_recurring: true,
-      recurring_id: item.id,
-    })
-
-    if (error) {
-      toast.error('Failed to create transaction')
-      return
-    }
-
-    // Update next_date based on frequency
-    const nextDate = new Date(item.next_date)
-    switch (item.frequency) {
-      case 'daily':
-        nextDate.setDate(nextDate.getDate() + 1)
-        break
-      case 'weekly':
-        nextDate.setDate(nextDate.getDate() + 7)
-        break
-      case 'monthly':
-        nextDate.setMonth(nextDate.getMonth() + 1)
-        break
-      case 'yearly':
-        nextDate.setFullYear(nextDate.getFullYear() + 1)
-        break
-    }
-
-    await supabase
-      .from('recurring_transactions')
-      .update({ next_date: nextDate.toISOString().split('T')[0] })
-      .eq('id', item.id)
+    const { error } = await commitOperation({ action:'post_recurring', id:item.id, expected_next_date:item.next_date, date:manilaToday() })
+    if(error) { toast.error(error.message); return }
 
     toast.success('Transaction created!')
     router.refresh()
@@ -117,8 +79,8 @@ export function RecurringList({ recurring }: RecurringListProps) {
   return (
     <div className="space-y-2">
       {recurring.map((item) => {
-        const category = item.category as any
-        const account = item.account as any
+        const category = item.category
+        const account = item.account
         return (
           <Card key={item.id}>
             <CardContent className="p-4">

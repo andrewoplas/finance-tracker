@@ -1,0 +1,1 @@
+export default function Loading(){return <div className="overview" role="status" aria-label="Loading monthly overview"><div className="surface"><h2>Loading your month…</h2><p className="muted">Fetching your ledger and plans.</p><div className="h-48 bg-muted rounded-xl mt-6 animate-pulse"/></div></div>}

@@ -20,17 +20,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
-    console.error('🚨 ErrorBoundary caught:', error)
     return { hasError: true, error }
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('🚨 Error details:', {
-      error: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-    })
-  }
 
   render() {
     if (this.state.hasError) {
@@ -42,7 +34,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
             </div>
             <h2 className="text-xl font-semibold">Something went wrong</h2>
             <p className="text-muted-foreground text-sm">
-              {this.state.error?.message || 'An unexpected error occurred'}
+              We couldn’t load this view. Please try again.
             </p>
             <Button
               onClick={() => {

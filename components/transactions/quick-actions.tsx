@@ -1,5 +1,8 @@
 'use client'
 
+import { createEntries } from '@/lib/finance/client'
+import { manilaToday } from '@/lib/finance/core'
+
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Zap } from 'lucide-react'
@@ -47,9 +50,9 @@ export function QuickActions({ frequentTransactions }: QuickActionsProps) {
       }
 
       // Insert the transaction with today's date
-      const today = new Date().toISOString().split('T')[0]
+      const today = manilaToday()
       
-      const { error } = await supabase.from('transactions').insert({
+      const { error } = await createEntries({
         user_id: user.id,
         description: tx.description,
         amount: tx.amount,
@@ -63,8 +66,7 @@ export function QuickActions({ frequentTransactions }: QuickActionsProps) {
 
       toast.success(`Logged: ${tx.description} ₱${tx.amount.toFixed(2)}`)
       router.refresh()
-    } catch (error) {
-      console.error('Quick log error:', error)
+    } catch {
       toast.error('Failed to log transaction')
     } finally {
       setLoading(null)

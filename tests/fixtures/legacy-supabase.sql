@@ -1,0 +1,32 @@
+-- Reported legacy DDL with synthetic identities/records only.
+create schema auth;
+create role anon;
+create role authenticated;
+create role service_role;
+create table auth.users(id uuid primary key,raw_user_meta_data jsonb);
+create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
+create table public.wallets(id uuid primary key default gen_random_uuid(),name varchar(100) not null,description text,balance numeric(12,2) default 0,budget_limit numeric(12,2),color varchar(7) default '#3B82F6',created_at timestamptz default now(),updated_at timestamptz default now(),user_id uuid not null references auth.users(id) on delete cascade);
+create table public.categories(id uuid primary key default gen_random_uuid(),name varchar(100) not null,icon varchar(50),color varchar(7) default '#6B7280',created_at timestamptz default now());
+create table public.transactions(id uuid primary key default gen_random_uuid(),amount numeric(12,2) not null,description text not null,date date not null,wallet_id uuid references public.wallets(id) on delete cascade,category_id uuid references public.categories(id) on delete set null,type varchar(20) default 'expense' check(type in ('income','expense','transfer')),status varchar(20) default 'completed' check(status in ('pending','completed','failed')),payment_method varchar(100),merchant varchar(200),notes text,created_at timestamptz default now(),updated_at timestamptz default now(),user_id uuid not null references auth.users(id) on delete cascade);
+CREATE OR REPLACE FUNCTION public.create_user_wallets() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $function$ BEGIN INSERT INTO public.wallets (user_id,name,description,color,budget_limit,balance) VALUES (NEW.id,'Life','Essential expenses and bills','#EF4444',50000.00,0.00),(NEW.id,'Growth','Investments and savings','#10B981',30000.00,0.00),(NEW.id,'Fun','Entertainment and discretionary spending','#F59E0B',20000.00,0.00); RETURN NEW; EXCEPTION WHEN OTHERS THEN RAISE WARNING 'Failed to create wallets for user %: %',NEW.id,SQLERRM; RETURN NEW; END; $function$;
+CREATE OR REPLACE FUNCTION public.update_updated_at_column() RETURNS trigger LANGUAGE plpgsql AS $function$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $function$;
+-- Fourth synthetic user has no wallets, as in the reported count distribution.
+insert into auth.users values('10000000-0000-4000-8000-000000000004','{}');
+CREATE TRIGGER create_wallets_on_signup AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.create_user_wallets();
+CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON public.transactions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_wallets_updated_at BEFORE UPDATE ON public.wallets FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+insert into auth.users values('10000000-0000-4000-8000-000000000001','{}'),('10000000-0000-4000-8000-000000000002','{}'),('10000000-0000-4000-8000-000000000003','{}');
+insert into public.categories(name) select 'Synthetic category '||n from generate_series(1,14) n;
+insert into public.transactions(user_id,wallet_id,category_id,amount,type,description,date) select w.user_id,w.id,(select id from public.categories limit 1),10,'expense','Synthetic legacy record','2026-02-03' from public.wallets w where user_id in ('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002');
+alter table public.wallets enable row level security;
+alter table public.categories enable row level security;
+alter table public.transactions enable row level security;
+create policy categories_public_read on public.categories for select to public using(true);
+create policy wallets_user_access on public.wallets for all to public using(auth.uid()=user_id);
+create policy transactions_user_access on public.transactions for all to public using(auth.uid()=user_id);
+grant usage on schema public to public,anon,authenticated,service_role;
+grant all on public.wallets,public.categories,public.transactions to anon,authenticated,service_role;
+grant execute on function public.create_user_wallets(),public.update_updated_at_column() to public,anon,authenticated,service_role;
+alter default privileges in schema public grant all on tables to anon,authenticated,service_role;
+alter default privileges in schema public grant all on sequences to anon,authenticated,service_role;
+alter default privileges in schema public grant execute on functions to anon,authenticated,service_role;

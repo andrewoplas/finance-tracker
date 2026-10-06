@@ -1,9 +1,10 @@
+import {stripMigrationTransaction} from './sql-statements';
 import { readFile, writeFile } from 'node:fs/promises';
 export async function financeSchemaSQL(){
  const names=['001_initial_schema','002_add_wallets','003_ledger_integrity','004_financial_operations','005_rebuildable_balances','006_financial_workflows'];
  const sqls=await Promise.all(names.map(n=>readFile(`supabase/migrations/${n}.sql`,'utf8')));
  const body=sqls.map((sql,i)=>{
-   let transformed=sql.replace(/\bpublic\./g,'finance.').replace(/search_path\s*=\s*public/g,'search_path = finance').replace(/schemaname='public'/g,"schemaname='finance'");
+   let transformed=stripMigrationTransaction(sql).replace(/\bpublic\./g,'finance.').replace(/search_path\s*=\s*public/g,'search_path = finance').replace(/schemaname='public'/g,"schemaname='finance'");
    if(i===0)transformed=transformed.replace(/create or replace trigger on_auth_user_created\s+after insert on auth.users\s+for each row execute procedure finance.handle_new_user\(\);/,'-- No auth.users trigger: profile provisioning is explicit after verified login.');
    return `-- Source: ${names[i]}\n${transformed}`;
  }).join('\n');

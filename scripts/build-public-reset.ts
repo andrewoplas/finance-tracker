@@ -1,7 +1,8 @@
+import {stripMigrationTransaction} from './sql-statements';
 import {readFile,writeFile} from 'node:fs/promises';
 const migrations=['001_initial_schema','002_add_wallets','003_ledger_integrity','004_financial_operations','005_rebuildable_balances','006_financial_workflows'];
 export async function publicResetSQL(){
- const sources=await Promise.all(migrations.map(n=>readFile(`supabase/migrations/${n}.sql`,'utf8')));
+ const sources=(await Promise.all(migrations.map(n=>readFile(`supabase/migrations/${n}.sql`,'utf8')))).map(stripMigrationTransaction);
  const body=sources.join('\n');
  const relations=[...new Set([...body.matchAll(/create\s+(?:or\s+replace\s+)?(?:table|view)\s+(?:if\s+not\s+exists\s+)?(?:public\.)?(\w+)/gi)].map(m=>m[1]))];
  const functions=[...new Set([...body.matchAll(/create\s+(?:or\s+replace\s+)?function\s+(?:public\.)?(\w+)/gi)].map(m=>m[1]))];

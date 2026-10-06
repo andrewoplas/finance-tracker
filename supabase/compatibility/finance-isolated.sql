@@ -226,8 +226,7 @@ create or replace trigger on_transaction_wallet_change
   for each row execute procedure update_wallet_balance();
 
 -- Source: 003_ledger_integrity
--- Review on a database copy before applying. This does not repair historical drift.
-begin;
+
 -- Reject cross-owner references even when invoked by privileged triggers.
 create or replace function finance.validate_financial_owner() returns trigger
 language plpgsql set search_path = finance, pg_temp as $$
@@ -321,10 +320,8 @@ create trigger immutable_account_owner before update on finance.accounts for eac
 create trigger immutable_category_owner before update on finance.categories for each row execute function finance.immutable_financial_owner();
 create trigger immutable_wallet_owner before update on finance.wallets for each row execute function finance.immutable_financial_owner();
 alter function finance.handle_new_user() set search_path = finance, pg_temp;
-commit;
-
 -- Source: 004_financial_operations
-begin;
+
 alter table finance.recurring_transactions add column anchor_day integer check(anchor_day between 1 and 31);
 alter table finance.transactions add column revision integer not null default 1,
   add column bill_date date, add column paid_date date,
@@ -458,10 +455,8 @@ create table finance.retro_plans (
 );
 alter table finance.retro_plans enable row level security;
 create policy own_retro on finance.retro_plans for all using(auth.uid()=user_id) with check(auth.uid()=user_id);
-commit;
-
 -- Source: 005_rebuildable_balances
-begin;
+
 -- Existing cached balances are NOT trustworthy opening balances. Keep null until
 -- an owner explicitly reconciles a verified opening balance in a separate rollout.
 alter table finance.accounts add column opening_balance numeric(12,2);
@@ -493,11 +488,8 @@ from finance.wallets w;
 -- All application transaction mutations now use the audited RPC. Keep SELECT RLS.
 drop policy "Users can manage own transactions" on finance.transactions;
 create policy own_transactions_read on finance.transactions for select using(auth.uid()=user_id);
-
-commit;
-
 -- Source: 006_financial_workflows
-begin;
+
 alter table finance.accounts add column revision integer not null default 1;
 alter table finance.wallets add column revision integer not null default 1;
 create table finance.import_batches (
@@ -952,8 +944,6 @@ begin
 end $$;
 create trigger protect_account_history before delete on finance.accounts for each row execute function finance.protect_balance_history();
 create trigger protect_wallet_history before delete on finance.wallets for each row execute function finance.protect_balance_history();
-commit;
-
 -- Remove the unused signup function: this bundle attaches no auth trigger.
 drop function finance.handle_new_user();
 -- Close inherited/default privileges on new objects; opening API access is a separate reviewed step.

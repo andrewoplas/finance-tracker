@@ -243,8 +243,7 @@ create or replace trigger on_transaction_wallet_change
   for each row execute procedure update_wallet_balance();
 
 -- Source 003_ledger_integrity
--- Review on a database copy before applying. This does not repair historical drift.
-begin;
+
 -- Reject cross-owner references even when invoked by privileged triggers.
 create or replace function public.validate_financial_owner() returns trigger
 language plpgsql set search_path = public, pg_temp as $$
@@ -338,10 +337,8 @@ create trigger immutable_account_owner before update on public.accounts for each
 create trigger immutable_category_owner before update on public.categories for each row execute function public.immutable_financial_owner();
 create trigger immutable_wallet_owner before update on public.wallets for each row execute function public.immutable_financial_owner();
 alter function public.handle_new_user() set search_path = public, pg_temp;
-commit;
-
 -- Source 004_financial_operations
-begin;
+
 alter table public.recurring_transactions add column anchor_day integer check(anchor_day between 1 and 31);
 alter table public.transactions add column revision integer not null default 1,
   add column bill_date date, add column paid_date date,
@@ -475,10 +472,8 @@ create table public.retro_plans (
 );
 alter table public.retro_plans enable row level security;
 create policy own_retro on public.retro_plans for all using(auth.uid()=user_id) with check(auth.uid()=user_id);
-commit;
-
 -- Source 005_rebuildable_balances
-begin;
+
 -- Existing cached balances are NOT trustworthy opening balances. Keep null until
 -- an owner explicitly reconciles a verified opening balance in a separate rollout.
 alter table public.accounts add column opening_balance numeric(12,2);
@@ -510,11 +505,8 @@ from public.wallets w;
 -- All application transaction mutations now use the audited RPC. Keep SELECT RLS.
 drop policy "Users can manage own transactions" on public.transactions;
 create policy own_transactions_read on public.transactions for select using(auth.uid()=user_id);
-
-commit;
-
 -- Source 006_financial_workflows
-begin;
+
 alter table public.accounts add column revision integer not null default 1;
 alter table public.wallets add column revision integer not null default 1;
 create table public.import_batches (
@@ -969,8 +961,6 @@ begin
 end $$;
 create trigger protect_account_history before delete on public.accounts for each row execute function public.protect_balance_history();
 create trigger protect_wallet_history before delete on public.wallets for each row execute function public.protect_balance_history();
-commit;
-
 -- Explicit new application objects only; never revoke all objects in public.
 revoke all on public.profiles, public.accounts, public.categories, public.transactions, public.budgets, public.recurring_transactions, public.wallets, public.financial_audit, public.financial_requests, public.retro_plans, public.ledger_account_balances, public.ledger_wallet_balances, public.import_batches, public.installment_plans, public.installment_items, public.installment_payments, public.receivables, public.receivable_collections, public.balance_reconciliations, public.workflow_transactions, public.finance_report_rows, public.receivable_balances, public.installment_balances from public,anon,authenticated,service_role;
 do $acl$ declare obj record; begin

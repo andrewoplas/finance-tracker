@@ -45,14 +45,14 @@ export function AccountList({ accounts, isArchived = false }: AccountListProps) 
   }
 
   const handleDelete = async (account: Account) => {
-    if (!confirm('Are you sure? This will delete the account and all its transactions.')) {
+    if (!confirm('Delete this empty account? Accounts with ledger history must be archived instead.')) {
       return
     }
 
     const { error } = await supabase.from('accounts').delete().eq('id', account.id)
 
     if (error) {
-      toast.error('Failed to delete account')
+      toast.error('Could not delete. Archive accounts with history instead.')
       return
     }
 
@@ -147,7 +147,7 @@ export function AccountList({ accounts, isArchived = false }: AccountListProps) 
                 
                 <div className="flex items-end justify-between">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Balance</p>
+                    <p className="text-xs text-muted-foreground mb-1">{account.opening_balance===null?'Cached balance · reconcile first':'Ledger balance'}</p>
                     <p className={cn(
                       "text-2xl font-bold tabular-nums",
                       isNegative ? 'text-expense' : 'text-foreground'

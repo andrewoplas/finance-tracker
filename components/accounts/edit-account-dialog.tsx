@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -100,9 +101,10 @@ export function EditAccountDialog({ account, open, onOpenChange }: EditAccountDi
             Current balance: ₱{Number(account.balance).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
           </p>
           <p className="text-xs text-gray-400">
-            Balance is updated automatically via transactions.
+            {account.opening_balance === null ? 'Opening balance needs reconciliation.' : 'Balance is rebuilt from its opening baseline and ledger.'}
           </p>
 
+          <Link className="text-button" href="/dashboard/plans#reconcile">Reconcile balance with an audit trail →</Link>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Saving...' : 'Save Changes'}
           </Button>

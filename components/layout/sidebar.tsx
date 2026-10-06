@@ -27,6 +27,7 @@ const navItems = [
   { href: '/dashboard/transactions', label: 'Transactions', icon: ArrowLeftRight },
   { href: '/dashboard/accounts', label: 'Accounts', icon: Wallet },
   { href: '/dashboard/wallets', label: 'Wallets', icon: Briefcase },
+  { href: '/dashboard/plans', label: 'Plans & shared money', icon: Target },
   { href: '/dashboard/import', label: 'Import studio', icon: ArrowLeftRight },
   { href: '/dashboard/recurring', label: 'Recurring', icon: Repeat },
   { href: '/dashboard/reports', label: 'Reports', icon: PieChart },

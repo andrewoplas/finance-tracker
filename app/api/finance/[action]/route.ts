@@ -47,6 +47,42 @@ export async function GET(
         "Session-authenticated API; no external connector configured",
     });
   }
+  if (action === "workspace") {
+    const tables = [
+      "accounts",
+      "wallets",
+      "categories",
+      "transactions",
+      "installment_plans",
+      "installment_balances",
+      "installment_payments",
+      "receivable_balances",
+      "receivable_collections",
+      "import_batches",
+      "balance_reconciliations",
+    ];
+    const responses = await Promise.all(
+      tables.map((table) =>
+        db.from(table).select("*").eq("user_id", user.id).limit(1001),
+      ),
+    );
+    if (responses.some((r) => r.error))
+      return json(
+        { error: "Workflow data unavailable. Check the reviewed migrations." },
+        503,
+      );
+    if (responses.some((r) => r.data!.length > 1000))
+      return json(
+        {
+          error:
+            "Workspace exceeds this view's limit; no partial data returned.",
+        },
+        422,
+      );
+    return json(
+      Object.fromEntries(tables.map((table, i) => [table, responses[i].data])),
+    );
+  }
   if (action === "audit") {
     const id = z.uuid().safeParse(url.searchParams.get("id"));
     if (!id.success) return json({ error: "Invalid transaction id" }, 400);
@@ -65,12 +101,10 @@ export async function GET(
     const month = monthOnly.safeParse(url.searchParams.get("month"));
     if (!month.success) return json({ error: "Valid month required" }, 400);
     const { data, error } = await db
-      .from("transactions")
+      .from(action === "report" ? "finance_report_rows" : "transactions")
       .select("*")
       .eq("user_id", user.id)
       .eq("report_month", month.data)
-      .order("date", { ascending: false })
-      .order("id")
       .limit(1001);
     if (error)
       return json(
@@ -85,11 +119,13 @@ export async function GET(
         },
         422,
       );
-    const entries = data.map((t) => ({
-      ...t,
-      amount: String(t.amount),
-      personal_amount: String(t.personal_amount),
-    })) as LedgerEntry[];
+    const entries = data
+      .map((row) => (action === "report" ? row.entry : row))
+      .map((t) => ({
+        ...t,
+        amount: String(t.amount),
+        personal_amount: String(t.personal_amount),
+      })) as LedgerEntry[];
     return json(
       action === "report"
         ? monthlyReport(entries, month.data)
@@ -132,13 +168,11 @@ export async function POST(
       .strict()
       .safeParse(body);
     if (!parsed.success) return json({ error: "Invalid plan" }, 400);
-    const { error } = await db
-      .from("retro_plans")
-      .upsert({
-        user_id: user.id,
-        ...parsed.data,
-        updated_at: new Date().toISOString(),
-      });
+    const { error } = await db.from("retro_plans").upsert({
+      user_id: user.id,
+      ...parsed.data,
+      updated_at: new Date().toISOString(),
+    });
     return error
       ? json({ error: "Could not save plan" }, 503)
       : json({ saved: true });
@@ -176,10 +210,9 @@ export async function POST(
   if (error)
     return json(
       {
-        error:
-          error.code === "40001"
-            ? "Revision changed. Reload and review again."
-            : "Operation rejected. Check references and idempotency key; database migration may be required.",
+        error: ["P0001", "40001"].includes(error.code)
+          ? error.message
+          : "Operation rejected. Check references and idempotency key; database migration may be required.",
       },
       error.code === "40001" ? 409 : 422,
     );

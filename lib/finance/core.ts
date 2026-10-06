@@ -85,6 +85,7 @@ export type LedgerEntry = Entry & {
   id: string;
   revision: number;
   reversed_at?: string | null;
+  report_kind?: "transaction" | "installment" | "collection";
 };
 export function monthlyReport(entries: LedgerEntry[], month: string) {
   monthOnly.parse(month);
@@ -93,8 +94,11 @@ export function monthlyReport(entries: LedgerEntry[], month: string) {
   );
   const sum = (type: Entry["type"]) =>
     rows
-      .filter((t) => t.type === type)
+      .filter((t) => t.type === type && t.report_kind !== "collection")
       .reduce((n, t) => n + minor(t.amount), 0);
+  const collected = rows
+    .filter((t) => t.report_kind === "collection")
+    .reduce((n, t) => n + minor(t.amount), 0);
   const income = sum("income"),
     spending = sum("expense");
   const personal = rows
@@ -113,7 +117,8 @@ export function monthlyReport(entries: LedgerEntry[], month: string) {
     spending,
     personal,
     recoverable: spending - personal,
-    net: income - spending,
+    collected,
+    net: income + collected - spending,
     transfers: sum("transfer"),
     count: rows.length,
   };

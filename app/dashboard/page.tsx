@@ -34,42 +34,64 @@ export default async function DashboardPage({
       data: { user },
     } = await db.auth.getUser();
     if (!user) throw new Error("Sign in to load your overview.");
-    const [transactions, categories, budgets, commitments, accounts, retro] =
-      await Promise.all([
-        db
-          .from("transactions")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("report_month", month)
-          .order("date", { ascending: false })
-          .limit(1001),
-        db
-          .from("categories")
-          .select("id,name")
-          .eq("user_id", user.id)
-          .eq("type", "expense"),
-        db
-          .from("budgets")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("period", "monthly"),
-        db
-          .from("recurring_transactions")
-          .select("id,description,amount,next_date")
-          .eq("user_id", user.id)
-          .eq("is_active", true)
-          .gte("next_date", manilaToday())
-          .order("next_date")
-          .limit(4),
-        db.from("accounts").select("id,name").eq("user_id", user.id),
-        db
-          .from("retro_plans")
-          .select("notes")
-          .eq("user_id", user.id)
-          .eq("month", month)
-          .maybeSingle(),
-      ]);
+    const [
+      transactions,
+      categories,
+      budgets,
+      commitments,
+      accounts,
+      retro,
+      reporting,
+      installments,
+    ] = await Promise.all([
+      db
+        .from("transactions")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("report_month", month)
+        .order("date", { ascending: false })
+        .limit(1001),
+      db
+        .from("categories")
+        .select("id,name")
+        .eq("user_id", user.id)
+        .eq("type", "expense"),
+      db
+        .from("budgets")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("period", "monthly"),
+      db
+        .from("recurring_transactions")
+        .select("id,description,amount,next_date")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .gte("next_date", manilaToday())
+        .order("next_date")
+        .limit(4),
+      db.from("accounts").select("id,name").eq("user_id", user.id),
+      db
+        .from("retro_plans")
+        .select("notes")
+        .eq("user_id", user.id)
+        .eq("month", month)
+        .maybeSingle(),
+      db
+        .from("finance_report_rows")
+        .select("entry")
+        .eq("user_id", user.id)
+        .eq("report_month", month)
+        .limit(1001),
+      db
+        .from("installment_balances")
+        .select("id,due_date,remaining")
+        .eq("user_id", user.id)
+        .gt("remaining", 0)
+        .order("due_date")
+        .limit(4),
+    ]);
     if (
+      reporting.error ||
       transactions.error ||
       categories.error ||
       budgets.error ||
@@ -78,7 +100,7 @@ export default async function DashboardPage({
       throw new Error(
         "The ledger is unavailable. The reviewed database migrations may need to be applied.",
       );
-    if (transactions.data.length > 1000)
+    if (transactions.data.length > 1000 || reporting.data!.length > 1000)
       throw new Error(
         "This month exceeds the supported report size. Partial totals are not shown.",
       );
@@ -114,14 +136,26 @@ export default async function DashboardPage({
           .reduce((n, b) => n + minor(String(b.amount)), 0),
       ),
     }));
+    data.reportEntries = reporting.data!.map((r) => r.entry) as LedgerEntry[];
     data.accounts = accounts.data;
     data.commitments = (commitments.data ?? []).map((c) => ({
       ...c,
       description: c.description || "Scheduled transaction",
       amount: String(c.amount),
     }));
+    data.commitments = [
+      ...data.commitments,
+      ...(installments.data ?? []).map((item) => ({
+        id: item.id,
+        description: "Card installment · remaining due",
+        amount: String(item.remaining),
+        next_date: item.due_date,
+      })),
+    ]
+      .sort((a, b) => a.next_date.localeCompare(b.next_date))
+      .slice(0, 4);
     data.retro = retro.data?.notes;
-    if (commitments.error || retro.error)
+    if (commitments.error || retro.error || installments.error)
       data.partial =
         "Spending loaded. Commitments or saved reflection could not load; those sections may be incomplete.";
   } catch (error) {

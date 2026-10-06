@@ -22,8 +22,8 @@ const navItems = [
     icon: Wallet,
   },
   {
-    name: 'Wallets',
-    href: '/dashboard/wallets',
+    name: 'Plans',
+    href: '/dashboard/plans',
     icon: Briefcase,
   },
 ]

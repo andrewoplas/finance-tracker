@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { TransactionInspector } from "@/components/transactions/transaction-inspector";
 import {
   ArrowDownLeft,
   ArrowRight,
@@ -23,6 +25,7 @@ import {
 
 export type OverviewData = {
   entries: LedgerEntry[];
+  reportEntries?: LedgerEntry[];
   categories: { id: string; name: string; amount: string }[];
   commitments: {
     id: string;
@@ -63,84 +66,27 @@ export function MonthlyOverview({
   data: OverviewData;
   demo?: boolean;
 }) {
+  const router = useRouter();
   const [entries, setEntries] = useState(data.entries);
   const [selected, setSelected] = useState<LedgerEntry | null>(null);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [notes, setNotes] = useState(data.retro ?? "");
   const [filter, setFilter] = useState("all");
-  const report = useMemo(() => monthlyReport(entries, month), [entries, month]);
+  const reportEntries = data.reportEntries ?? entries;
+  const report = useMemo(
+    () => monthlyReport(reportEntries, month),
+    [reportEntries, month],
+  );
   const budget = data.categories.reduce((n, c) => n + minor(c.amount), 0);
   const pending = entries.filter((t) => t.review_status === "pending");
   const spendingCategories = data.categories.map((c) => ({
     ...c,
-    spent: entries
+    spent: reportEntries
       .filter((t) => t.type === "expense" && t.category_id === c.id)
       .reduce((n, t) => n + minor(t.amount), 0),
   }));
   const base = demo ? "/demo" : "/dashboard";
-  async function review(entry: LedgerEntry) {
-    if (demo) {
-      setEntries((items) =>
-        items.map((t) =>
-          t.id === entry.id ? { ...t, review_status: "reviewed" } : t,
-        ),
-      );
-      setNotice("Reviewed in this demo session only.");
-      setSelected(null);
-      return;
-    }
-    setBusy(true);
-    setNotice("");
-    try {
-      const { id, revision, ...values } = entry;
-      const payload = {
-        request_id: crypto.randomUUID(),
-        operation: {
-          action: "amend",
-          id,
-          expected_revision: revision,
-          entry: { ...values, review_status: "reviewed" },
-        },
-      };
-      const preview = await fetch("/api/finance/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const p = await preview.json();
-      if (!preview.ok) throw new Error(p.error);
-      const commit = await fetch("/api/finance/commit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-finance-preview": p.digest,
-        },
-        body: JSON.stringify(payload),
-      });
-      const result = await commit.json();
-      if (!commit.ok) throw new Error(result.error);
-      setEntries((items) =>
-        items.map((t) =>
-          t.id === id
-            ? {
-                ...t,
-                revision: result.result.revision,
-                review_status: "reviewed",
-              }
-            : t,
-        ),
-      );
-      setSelected(null);
-      setNotice("Review saved. The change is recorded in the audit history.");
-    } catch (error) {
-      setNotice(
-        error instanceof Error ? error.message : "Could not save review",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
   async function savePlan() {
     if (demo) {
       setNotice("Plan saved for this demo session only.");
@@ -170,8 +116,13 @@ export function MonthlyOverview({
     0,
   ).getDate();
   const daily = Array.from({ length: dayCount }, (_, i) =>
-    entries
-      .filter((t) => t.type === "expense" && Number(t.date.slice(-2)) <= i + 1)
+    reportEntries
+      .filter((t) => {
+        const date =
+          t.report_kind === "installment" ? (t.bill_date ?? t.date) : t.date;
+        const day = date.slice(0, 7) === month ? Number(date.slice(-2)) : 1;
+        return t.type === "expense" && day <= i + 1;
+      })
       .reduce((n, t) => n + minor(t.amount), 0),
   );
   const max = Math.max(budget, report.spending, 1);
@@ -287,7 +238,7 @@ export function MonthlyOverview({
               <div className="spending-chart">
                 <div className="chart-legend">
                   <span>
-                    <i /> Cumulative spending
+                    <i /> Cumulative report spending
                   </span>
                   {budget > 0 && (
                     <span>
@@ -298,7 +249,7 @@ export function MonthlyOverview({
                 <svg
                   viewBox="0 0 600 110"
                   role="img"
-                  aria-label="Cumulative spending through the selected month"
+                  aria-label="Cumulative report spending through the selected month"
                 >
                   <path
                     d="M0 95 H600 M0 50 H600"
@@ -489,13 +440,18 @@ export function MonthlyOverview({
               ) : (
                 <p className="empty-copy">No upcoming commitments recorded.</p>
               )}
+              {!demo && (
+                <Link className="text-button" href="/dashboard/plans">
+                  Manage installments & repayments <ArrowRight size={14} />
+                </Link>
+              )}
               <div className="receivable">
                 <span>
                   Shared & reimbursable share <CircleHelp size={14} />
                 </span>
                 <b>{money(report.recoverable)}</b>
                 <small>
-                  Allocated to others. Collection is unverified and is not
+                  Allocated to others. Collection is tracked in Plans and is not
                   available cash.
                 </small>
               </div>
@@ -615,58 +571,31 @@ export function MonthlyOverview({
         open={!!selected}
         onOpenChange={(open) => !open && setSelected(null)}
       >
-        <DialogContent className="inspection">
+        <DialogContent className="inspection workflow-dialog">
           <DialogHeader>
             <DialogTitle>Transaction details</DialogTitle>
           </DialogHeader>
           {selected && (
-            <>
-              <p className="inspection-amount">
-                {money(minor(selected.amount))}
-              </p>
-              <h3>{selected.description}</h3>
-              <dl>
-                {[
-                  ["Type", selected.type],
-                  ["Purchase date", selected.date],
-                  ["Report month", selected.report_month],
-                  ["Bill date", selected.bill_date ?? "Not recorded"],
-                  ["Paid date", selected.paid_date ?? "Not recorded"],
-                  ["Attribution", selected.attribution],
-                  [
-                    "Personal share",
-                    money(
-                      selected.attribution === "personal"
-                        ? minor(selected.amount)
-                        : minor(selected.personal_amount),
-                    ),
-                  ],
-                  ["Revision", String(selected.revision)],
-                ].map(([label, value]) => (
-                  <div key={label}>
-                    <dt>{label}</dt>
-                    <dd>{value}</dd>
-                  </div>
-                ))}
-              </dl>
-              {selected.type === "transfer" && (
-                <p className="muted">
-                  A transfer moves money between your accounts and does not
-                  count as spending.
-                </p>
-              )}
-              <button
-                className="solid-button"
-                disabled={busy || selected.review_status === "reviewed"}
-                onClick={() => review(selected)}
-              >
-                {busy
-                  ? "Saving…"
-                  : selected.review_status === "reviewed"
-                    ? "Reviewed"
-                    : "Mark reviewed"}
-              </button>
-            </>
+            <TransactionInspector
+              key={selected.id}
+              entry={selected}
+              categories={data.categories}
+              demo={demo}
+              onSaved={(updated) => {
+                setEntries((items) =>
+                  updated
+                    ? items.map((t) => (t.id === updated.id ? updated : t))
+                    : items.filter((t) => t.id !== selected.id),
+                );
+                setSelected(null);
+                setNotice(
+                  demo
+                    ? "Updated in this demo session only."
+                    : "Correction saved with an audit record.",
+                );
+                if (!demo) router.refresh();
+              }}
+            />
           )}
         </DialogContent>
       </Dialog>

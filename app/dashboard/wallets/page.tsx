@@ -11,9 +11,10 @@ export default async function WalletsPage() {
 
   const [walletsRes, accountsRes] = await Promise.all([
     supabase.from('wallets').select('*').eq('user_id', user?.id).order('created_at'),
-    supabase.from('accounts').select('balance').eq('user_id', user?.id).eq('is_archived', false),
+    supabase.from('accounts').select('balance,opening_balance').eq('user_id', user?.id).eq('is_archived', false),
   ])
 
+  if(walletsRes.error||accountsRes.error||!user)return <div className="surface" role="alert"><h2>Wallets could not load</h2><p>Incomplete balances are not shown.</p><a href="/dashboard/wallets">Retry</a></div>
   const wallets = walletsRes.data || []
   const totalAccountBalance = accountsRes.data?.reduce((sum, acc) => sum + Number(acc.balance), 0) || 0
   const totalWalletBalance = wallets.reduce((sum, w) => sum + Number(w.balance), 0)
@@ -30,13 +31,14 @@ export default async function WalletsPage() {
             <p className="text-muted-foreground">
               Allocated: <span className="font-semibold text-foreground">{formatCurrency(totalWalletBalance)}</span>
               <span className="mx-2 text-border">•</span>
-              <span className="text-sm">Total Available: {formatCurrency(totalAccountBalance)}</span>
+              <span className="text-sm">Ledger account total: {formatCurrency(totalAccountBalance)}</span>
             </p>
           </div>
         </div>
         <AddWalletButton />
       </div>
 
+        {(wallets.some(w=>w.opening_balance===null)||accountsRes.data.some(a=>a.opening_balance===null))&&<div className="notice">Some opening balances need reconciliation. These are historical caches until verified.</div>}
         {/* Wallet List */}
         <WalletList wallets={wallets} totalBalance={totalAccountBalance} />
       </div>

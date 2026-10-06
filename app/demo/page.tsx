@@ -31,8 +31,11 @@ export default async function DemoPage({
           <a href="#activity">
             <ArrowLeftRight size={18} /> Activity
           </a>
+          <Link href="/demo/plans">
+            <CalendarDays size={18} /> Plans
+          </Link>
           <Link href="/demo/import">
-            <CalendarDays size={18} /> Import studio
+            <ArrowLeftRight size={18} /> Import studio
           </Link>
           <Link href="/login">
             <Settings2 size={18} /> Sign in

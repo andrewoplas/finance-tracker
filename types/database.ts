@@ -14,6 +14,8 @@ export interface Profile {
 }
 
 export interface Account {
+  opening_balance: number | null
+  revision: number
   id: string
   user_id: string
   name: string
@@ -91,6 +93,8 @@ export interface RecurringTransaction {
 }
 
 export interface Wallet {
+  opening_balance: number | null
+  revision: number
   id: string
   user_id: string
   name: string

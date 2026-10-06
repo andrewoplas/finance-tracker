@@ -21,7 +21,7 @@ export default async function ReportsPage() {
     data: { user },
   } = await db.auth.getUser();
   const { data, error } = await db
-    .from("transactions")
+    .from("finance_report_rows")
     .select("*")
     .eq("user_id", user?.id)
     .gte("report_month", months[5])
@@ -40,11 +40,13 @@ export default async function ReportsPage() {
         </a>
       </div>
     );
-  const entries = data.map((t) => ({
-    ...t,
-    amount: String(t.amount),
-    personal_amount: String(t.personal_amount),
-  })) as LedgerEntry[];
+  const entries = data
+    .map((row) => row.entry)
+    .map((t) => ({
+      ...t,
+      amount: String(t.amount),
+      personal_amount: String(t.personal_amount),
+    })) as LedgerEntry[];
   return (
     <div className="overview">
       <header className="overview-header">
@@ -60,11 +62,12 @@ export default async function ReportsPage() {
             <tr>
               {[
                 "Month",
-                "Income",
+                "Earned income",
+                "Collections",
                 "Spending",
                 "Personal share",
                 "Allocated to others",
-                "Net cashflow*",
+                "Net report amount*",
               ].map((h) => (
                 <th key={h} style={{ padding: 14 }}>
                   {h}
@@ -85,21 +88,26 @@ export default async function ReportsPage() {
                       {month}
                     </Link>
                   </td>
-                  {[r.income, r.spending, r.personal, r.recoverable, r.net].map(
-                    (n, i) => (
-                      <td key={i}>{money(n)}</td>
-                    ),
-                  )}
+                  {[
+                    r.income,
+                    r.collected,
+                    r.spending,
+                    r.personal,
+                    r.recoverable,
+                    r.net,
+                  ].map((n, i) => (
+                    <td key={i}>{money(n)}</td>
+                  ))}
                 </tr>
               );
             })}
           </tbody>
         </table>
         <p className="muted">
-          *Income minus expenses on report-month basis; this is not a bank
-          balance or a paid-date cashflow statement. Transfers and card
-          settlements are excluded from spending. Allocated shares do not imply
-          reimbursement has been collected.
+          *Income plus collected reimbursements minus spending on report-month
+          basis; this is not a bank balance or a paid-date cashflow statement.
+          Transfers and card settlements are excluded from spending. Allocated
+          shares do not imply reimbursement has been collected.
         </p>
       </div>
     </div>

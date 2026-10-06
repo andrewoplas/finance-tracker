@@ -10,12 +10,13 @@ export default async function AccountsPage() {
   
   const { data: { user } } = await supabase.auth.getUser()
   
-  const { data: accounts } = await supabase
+  const { data: accounts, error } = await supabase
     .from('accounts')
     .select('*')
     .eq('user_id', user?.id)
     .order('created_at', { ascending: true })
 
+  if(error||!user)return <div className="surface" role="alert"><h2>Accounts could not load</h2><p>Your balances have not been replaced with zero.</p><a href="/dashboard/accounts">Retry</a></div>
   const activeAccounts = accounts?.filter(a => !a.is_archived) || []
   const archivedAccounts = accounts?.filter(a => a.is_archived) || []
   const totalBalance = activeAccounts.reduce((sum, acc) => sum + Number(acc.balance), 0)
@@ -30,7 +31,7 @@ export default async function AccountsPage() {
           <div className="flex items-center gap-2 mt-1">
             <Wallet className="h-4 w-4 text-muted-foreground" />
             <p className="text-muted-foreground">
-              Total Balance: <span className="font-semibold text-foreground">{formatCurrency(totalBalance)}</span>
+              {activeAccounts.some(a=>a.opening_balance===null)?'Cached total · needs reconciliation:':'Ledger balance total:'} <span className="font-semibold text-foreground">{formatCurrency(totalBalance)}</span>
             </p>
           </div>
         </div>

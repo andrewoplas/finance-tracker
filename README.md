@@ -1,4 +1,4 @@
-> Local overhaul: start with `/demo` for a synthetic, credential-free monthly review workspace. Read [implementation and rollout notes](docs/OVERHAUL.md) before applying migrations or enabling persisted writes. Imports, installment payments, shared collections, and balance reconciliation use reviewed atomic operations after the migrations. No external assistant integration is connected.
+> Local overhaul: start with `/demo` for a synthetic, credential-free monthly review workspace. Read [implementation and rollout notes](docs/OVERHAUL.md) before applying migrations or enabling persisted writes. Imports, installment payments, shared collections, and balance reconciliation use reviewed atomic operations after the migrations. SMS and quick-log ingestion code and a callable skill are available; activation and credentials are separate. See [ingestion setup](docs/INGESTION.md).
 
 # 💰 Finance Tracker
 

@@ -26,6 +26,7 @@ const navItems = [
   { href: '/dashboard/accounts', label: 'Accounts', icon: Wallet },
 ]
 const tools = [
+  { href: '/dashboard/inbox', label: 'SMS inbox' },
   { href: '/dashboard/plans', label: 'Plans & shared money' },
   { href: '/dashboard/import', label: 'Import CSV' },
   { href: '/dashboard?view=reflection', label: 'Monthly reflection' },

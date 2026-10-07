@@ -1,0 +1,4 @@
+interface:
+  display_name: "Finance quick log"
+  short_description: "Record explicit PHP expenses with owned accounts"
+  default_prompt: "Use $finance-quick-log to log an expense with an explicit account."

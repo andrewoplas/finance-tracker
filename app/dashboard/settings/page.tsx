@@ -1,3 +1,5 @@
+import { QuickLogWorkspace } from '@/components/sms/quick-log-workspace';
+import { SmsWorkspace } from "@/components/sms/sms-workspace"
 import { TagManager } from "@/components/settings/tag-manager"
 import { createClient } from '@/lib/supabase/server'
 import { ThemePicker } from '@/components/theme-picker'
@@ -30,6 +32,8 @@ export default async function SettingsPage() {
       <section className="surface"><h2>Appearance</h2><p className="muted">Choose a theme or follow your device. Saved on this browser.</p><ThemePicker /></section>
 
       <ProfileSettings profile={profile} userEmail={user?.email || ''} />
+
+      <section id="transaction-api" className="surface"><SmsWorkspace setup /><QuickLogWorkspace setup /></section>
 
       <TagManager tags={tags.error || (tags.data?.length ?? 0)>500 ? [] : tags.data ?? []} available={!tags.error && (tags.data?.length ?? 0)<=500} />
       <CategoryManager categories={categories || []} />

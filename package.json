@@ -7,7 +7,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --import tsx --test tests/*.test.ts",
+    "test": "node --import tsx --test tests/*.test.ts && python3 -B tests/quick-log-client.test.py",
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {

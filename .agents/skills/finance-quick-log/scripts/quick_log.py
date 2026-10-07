@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import ssl
 import sys
 import urllib.error
 import urllib.request
@@ -33,7 +34,12 @@ def configuration():
 def call(base, key, request_id, body, opener=None):
     req = urllib.request.Request(base + '/api/v1/quick-log', data=json.dumps(body).encode(), method='POST',
         headers={'Content-Type':'application/json', 'Authorization':'Bearer ' + key, 'Idempotency-Key': request_id})
-    client = opener or urllib.request.build_opener(NoRedirect())
+    # Framework Python on macOS may lack its bundled CA file. Use the OS trust
+    # bundle, never an unverified context; explicit SSL_CERT_FILE remains respected.
+    cafile = os.environ.get('SSL_CERT_FILE')
+    if not cafile and sys.platform == 'darwin' and Path('/etc/ssl/cert.pem').is_file():
+        cafile = '/etc/ssl/cert.pem'
+    client = opener or urllib.request.build_opener(NoRedirect(), urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=cafile)))
     try:
         with client.open(req, timeout=20) as response:
             raw = response.read(65537)

@@ -33,7 +33,7 @@ export default async function DemoPage({
       </aside>
       <main>
         <MonthlyOverview
-          key={`${month}-${query.view}-${query.filter}`} view={["overview", "transactions", "analysis", "reflection"].includes(query.view ?? "") ? query.view : "overview"} initialFilter={query.filter}
+          key={month} view={["overview", "transactions", "analysis", "reflection"].includes(query.view ?? "") ? query.view : "overview"} initialFilter={query.filter}
           demo
           month={month}
           data={{

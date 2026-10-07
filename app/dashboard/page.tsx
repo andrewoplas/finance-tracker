@@ -162,5 +162,5 @@ export default async function DashboardPage({
     data.error =
       error instanceof Error ? error.message : "Could not load overview.";
   }
-  return <MonthlyOverview key={`${month}-${query.view}-${query.filter}`} view={["overview", "transactions", "analysis", "reflection"].includes(query.view ?? "") ? query.view : "overview"} initialFilter={query.filter} month={month} data={data} />;
+  return <MonthlyOverview key={month} view={["overview", "transactions", "analysis", "reflection"].includes(query.view ?? "") ? query.view : "overview"} initialFilter={query.filter} month={month} data={data} />;
 }

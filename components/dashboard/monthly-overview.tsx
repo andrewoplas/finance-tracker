@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { MonthlyLink } from "./monthly-link";
 import {PeriodPicker} from "./period-picker";
 import {activityDateLabel} from "@/lib/finance/date-label";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { TransactionInspector } from "@/components/transactions/transaction-inspector";
 import {
   ArrowDownLeft,
@@ -62,7 +63,7 @@ export function MonthlyOverview({
   month,
   data,
   demo = false,
-  view = "overview",
+  view: initialView = "overview",
   initialFilter = "all",
 }: {
   month: string;
@@ -72,12 +73,17 @@ export function MonthlyOverview({
   initialFilter?: string;
 }) {
   const router = useRouter();
+  const search = useSearchParams();
+  const requestedView = search.get("view") ?? initialView;
+  const view = ["overview", "transactions", "analysis", "reflection"].includes(requestedView) ? requestedView : "overview";
   const [entries, setEntries] = useState(data.entries);
   const [selected, setSelected] = useState<LedgerEntry | null>(null);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [notes, setNotes] = useState(data.retro ?? "");
   const [filter, setFilter] = useState(initialFilter);
+  useEffect(() => { setFilter(search.get("filter") ?? "all"); }, [search]);
+  useEffect(() => { setEntries(data.entries); }, [data.entries]);
   useEffect(() => {
     if (!demo) return;
     const added = (event: Event) => {
@@ -176,10 +182,10 @@ export function MonthlyOverview({
         </div>
       </header>
       <nav className="workspace-tabs" aria-label="Monthly views">
-        <Link aria-current={view === "overview" ? "page" : undefined} href={route("overview")}>Overview</Link>
-        <Link aria-current={view === "transactions" ? "page" : undefined} href={route("transactions")}>Transactions</Link>
-        <Link aria-current={view === "analysis" ? "page" : undefined} href={route("analysis")}>Spending plan</Link>
-        <details><summary>More</summary><div className="more-menu"><Link href={`${base}/plans`}>Plans & shared money</Link><Link href={`${base}/import`}>Import CSV</Link><Link href={route("reflection")}>Monthly reflection</Link></div></details>
+        <MonthlyLink loadedMonth={month} aria-current={view === "overview" ? "page" : undefined} href={route("overview")}>Overview</MonthlyLink>
+        <MonthlyLink loadedMonth={month} aria-current={view === "transactions" ? "page" : undefined} href={route("transactions")}>Transactions</MonthlyLink>
+        <MonthlyLink loadedMonth={month} aria-current={view === "analysis" ? "page" : undefined} href={route("analysis")}>Spending plan</MonthlyLink>
+        <details><summary>More</summary><div className="more-menu"><Link href={`${base}/plans`}>Plans & shared money</Link><Link href={`${base}/import`}>Import CSV</Link><MonthlyLink loadedMonth={month} href={route("reflection")}>Monthly reflection</MonthlyLink></div></details>
       </nav>
       {notice && (
         <div role="status" className="notice">
@@ -266,7 +272,7 @@ export function MonthlyOverview({
               </div>
               <p className="chart-caption">Report spending · Transfers excluded</p>
             </section>
-            <Link className="review-link" href={route("transactions", "pending")}><span>Needs review · includes attribution</span><span><b className="review-count">{pending.length}</b><ChevronRight size={16}/></span></Link>
+            <MonthlyLink loadedMonth={month} className="review-link" href={route("transactions", "pending")}><span>Needs review · includes attribution</span><span><b className="review-count">{pending.length}</b><ChevronRight size={16}/></span></MonthlyLink>
           </>}
           {view === "analysis" && <div className="analysis-view">
             <section className="surface categories-panel">
@@ -288,7 +294,7 @@ export function MonthlyOverview({
                     className="category-row"
                     key={c.id}
                     onClick={() => {
-                      router.push(route("transactions", c.id));
+                      window.history.pushState(null, "", route("transactions", c.id));
                     }}
                   >
                     <div>
@@ -384,7 +390,7 @@ export function MonthlyOverview({
               <div>
                 <h2>{view === "overview" ? "Recent transactions" : filter === "pending" ? "Needs review" : "Transactions"}</h2>
               </div>
-              {view === "overview" ? <Link href={route("transactions")}>See all <ChevronRight size={14}/></Link> : <select
+              {view === "overview" ? <MonthlyLink loadedMonth={month} href={route("transactions")}>See all <ChevronRight size={14}/></MonthlyLink> : <select
                 aria-label="Filter activity"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}

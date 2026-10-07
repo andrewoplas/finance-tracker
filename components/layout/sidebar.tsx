@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { MonthlyLink as Link } from "@/components/dashboard/monthly-link";
 import { usePathname, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
@@ -42,6 +42,13 @@ const bottomNavItems = [
 function NavContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname = usePathname()
   const search = useSearchParams()
+  const monthlyHref = (href: string) => {
+    if (pathname !== '/dashboard' || !search.get('month') || href.split('?')[0] !== '/dashboard') return href;
+    const [path, query] = href.split('?');
+    const params = new URLSearchParams(query);
+    params.set('month', search.get('month')!);
+    return `${path}?${params}`;
+  }
   const router = useRouter()
   const supabase = createClient()
 
@@ -60,7 +67,7 @@ function NavContent({ onItemClick }: { onItemClick?: () => void }) {
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={monthlyHref(item.href)}
                 onClick={onItemClick}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm group',
@@ -85,7 +92,7 @@ function NavContent({ onItemClick }: { onItemClick?: () => void }) {
         </div>
         <details className="mt-7 px-3 text-sm text-muted-foreground" open={tools.some(t => t.href === pathname)}>
           <summary className="cursor-pointer py-2">Tools</summary>
-          {tools.map(item => <Link className="block py-2.5" key={item.href} href={item.href} onClick={onItemClick}>{item.label}</Link>)}
+          {tools.map(item => <Link className="block py-2.5" key={item.href} href={monthlyHref(item.href)} onClick={onItemClick}>{item.label}</Link>)}
         </details>
       </nav>
 
@@ -96,7 +103,7 @@ function NavContent({ onItemClick }: { onItemClick?: () => void }) {
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={monthlyHref(item.href)}
               onClick={onItemClick}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm group',

@@ -1,5 +1,5 @@
 'use client'
-import Link from 'next/link'
+import { MonthlyLink as Link } from "@/components/dashboard/monthly-link";
 import {usePathname,useSearchParams,useRouter} from 'next/navigation'
 import {useEffect,useRef,useState} from 'react'
 import {Home,ArrowLeftRight,CalendarDays,Plus,X} from 'lucide-react'

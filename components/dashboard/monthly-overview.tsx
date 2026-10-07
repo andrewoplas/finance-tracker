@@ -11,7 +11,6 @@ import {
   ArrowDownLeft,
   ArrowRight,
   ArrowUpRight,
-  ChevronLeft,
   ChevronRight,
   CircleHelp,
   X,
@@ -55,11 +54,6 @@ const monthName = (month: string) =>
     year: "numeric",
     timeZone: "UTC",
   }).format(new Date(`${month}-01T00:00:00Z`));
-function shiftMonth(month: string, shift: number) {
-  const d = new Date(`${month}-01T00:00:00Z`);
-  d.setUTCMonth(d.getUTCMonth() + shift);
-  return d.toISOString().slice(0, 7);
-}
 
 export function MonthlyOverview({
   month,
@@ -167,22 +161,8 @@ export function MonthlyOverview({
       )}
       <header className="overview-header">
         <h1>{view === "transactions" ? "Transactions" : view === "analysis" ? "Spending plan" : view === "reflection" ? "Monthly reflection" : "Overview"}</h1>
-        <div className="overview-controls"><div className="month-switch">
-          <Link
-            aria-label="Previous month"
-            href={`${base}?month=${shiftMonth(month, -1)}&view=${view}`}
-          >
-            <ChevronLeft size={18} />
-          </Link>
-          <PeriodPicker month={month}/>
-          <Link
-            aria-label="Next month"
-            href={`${base}?month=${shiftMonth(month, 1)}&view=${view}`}
-          >
-            <ChevronRight size={18} />
-          </Link>
-        </div>
-      </div></header>
+        <PeriodPicker month={month} />
+      </header>
       <nav className="workspace-tabs" aria-label="Monthly views">
         <MonthlyLink loadedMonth={month} aria-current={view === "overview" ? "page" : undefined} href={route("overview")}>Overview</MonthlyLink>
         <MonthlyLink loadedMonth={month} aria-current={view === "transactions" ? "page" : undefined} href={route("transactions")}>Transactions</MonthlyLink>

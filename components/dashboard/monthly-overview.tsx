@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ThemePicker } from "@/components/theme-picker";
 import Link from "next/link";
 import { MonthlyLink } from "./monthly-link";
 import {PeriodPicker} from "./period-picker";
@@ -168,7 +167,7 @@ export function MonthlyOverview({
       )}
       <header className="overview-header">
         <h1>{view === "transactions" ? "Transactions" : view === "analysis" ? "Spending plan" : view === "reflection" ? "Monthly reflection" : "Overview"}</h1>
-        <div className="overview-controls"><ThemePicker /><div className="month-switch">
+        <div className="overview-controls"><div className="month-switch">
           <Link
             aria-label="Previous month"
             href={`${base}?month=${shiftMonth(month, -1)}&view=${view}`}

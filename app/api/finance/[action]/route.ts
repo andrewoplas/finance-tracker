@@ -36,7 +36,10 @@ export async function GET(
     );
     if (results.some((r) => r.error))
       return json({ error: "Context unavailable" }, 503);
+    const tags = await db.from("tags").select("id,name").eq("user_id", user.id).order("name").limit(501);
     return json({
+      tags: !tags.error && (tags.data?.length ?? 0)<=500 ? tags.data : [],
+      tagsAvailable: !tags.error && (tags.data?.length ?? 0)<=500,
       timezone: "Asia/Manila",
       currency: "PHP",
       today: manilaToday(),

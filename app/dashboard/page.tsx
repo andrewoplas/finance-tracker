@@ -43,6 +43,7 @@ export default async function DashboardPage({
       retro,
       reporting,
       installments,
+      tags,
     ] = await Promise.all([
       db
         .from("transactions")
@@ -89,6 +90,7 @@ export default async function DashboardPage({
         .gt("remaining", 0)
         .order("due_date")
         .limit(4),
+      db.from("tags").select("id,name").eq("user_id", user.id).order("name").limit(501),
     ]);
     if (
       reporting.error ||
@@ -107,6 +109,7 @@ export default async function DashboardPage({
     data.entries = transactions.data.map((t) => ({
       ...entrySchema.parse({
         account_id: t.account_id,
+        tag_ids: t.tag_ids,
         category_id: t.category_id,
         wallet_id: t.wallet_id,
         type: t.type,
@@ -138,6 +141,8 @@ export default async function DashboardPage({
     }));
     data.reportEntries = reporting.data!.map((r) => r.entry) as LedgerEntry[];
     data.accounts = accounts.data;
+    data.tags = tags.error || (tags.data?.length ?? 0)>500 ? [] : tags.data ?? [];
+    data.tagsAvailable = !tags.error && (tags.data?.length ?? 0)<=500;
     data.commitments = (commitments.data ?? []).map((c) => ({
       ...c,
       description: c.description || "Scheduled transaction",
@@ -158,6 +163,7 @@ export default async function DashboardPage({
     if (commitments.error || retro.error || installments.error)
       data.partial =
         "Spending loaded. Commitments or saved reflection could not load; those sections may be incomplete.";
+    if (!data.tagsAvailable) data.partial = [data.partial, "Tags could not load. Please try again shortly."].filter(Boolean).join(" ");
   } catch (error) {
     data.error =
       error instanceof Error ? error.message : "Could not load overview.";

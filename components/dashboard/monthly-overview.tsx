@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/dialog";
 
 export type OverviewData = {
+  tags?: { id: string; name: string }[];
+  tagsAvailable?: boolean;
   entries: LedgerEntry[];
   reportEntries?: LedgerEntry[];
   categories: { id: string; name: string; amount: string }[];
@@ -148,7 +150,7 @@ export function MonthlyOverview({
       .reduce((n, t) => n + minor(t.amount), 0),
   );
   const max = Math.max(budget, report.spending, 1);
-  const visible = entries.filter(t => filter === "all" || (filter === "pending" ? t.review_status === "pending" : t.category_id === filter)).sort((a,b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+  const visible = entries.filter(t => filter === "all" || (filter === "pending" ? t.review_status === "pending" : filter.startsWith("tag:") ? (t.tag_ids ?? []).includes(filter.slice(4)) : t.category_id === filter)).sort((a,b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
   const shown = view === "overview" ? visible.slice(0, 5) : visible;
   const days = [...new Set(shown.map(t => t.date))];
   const route = (nextView: string, nextFilter = "all") => `${base}?month=${month}&view=${nextView}&filter=${nextFilter}`;
@@ -398,6 +400,7 @@ export function MonthlyOverview({
               >
                 <option value="all">All activity</option>
                 <option value="pending">Needs review</option>
+                {(data.tags ?? []).map(tag => <option key={tag.id} value={`tag:${tag.id}`}>Tag · {tag.name}</option>)}
                 {data.categories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -422,6 +425,7 @@ export function MonthlyOverview({
                   </span>
                   <span className="activity-title">
                     <b>{t.description}</b>
+                    {!!t.tag_ids?.length && <span className="transaction-tags">{t.tag_ids.map(id => <span key={id}>#{data.tags?.find(tag=>tag.id===id)?.name ?? "Tag"}</span>)}</span>}
                     <small>
                       {data.categories.find(c=>c.id===t.category_id)?.name ?? (t.type==="transfer"?"Transfer":"Uncategorized")} · {data.accounts.find((a) => a.id === t.account_id)?.name ??
                         "Account"}
@@ -448,7 +452,7 @@ export function MonthlyOverview({
                 filter === "all" ||
                 (filter === "pending"
                   ? t.review_status === "pending"
-                  : t.category_id === filter),
+                  : filter.startsWith("tag:") ? (t.tag_ids ?? []).includes(filter.slice(4)) : t.category_id === filter),
             ) && <p className="empty-copy">No transactions in this view.</p>}
           </section>}
           {view === "reflection" && <section className="surface reflection">
@@ -496,6 +500,8 @@ export function MonthlyOverview({
               key={selected.id}
               entry={selected}
               categories={data.categories}
+              tags={data.tags ?? []}
+              tagsAvailable={data.tagsAvailable ?? demo}
               demo={demo}
               onSaved={(updated) => {
                 setEntries((items) =>

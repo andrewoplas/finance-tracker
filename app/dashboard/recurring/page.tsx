@@ -1,3 +1,4 @@
+import { PlannedItems } from "@/components/recurring/planned-items"
 import { createClient } from '@/lib/supabase/server'
 import { RecurringList } from '@/components/recurring/recurring-list'
 import { AddRecurringButton } from '@/components/recurring/add-recurring-button'
@@ -26,6 +27,7 @@ export default async function RecurringPage() {
         <AddRecurringButton />
       </div>
 
+      <PlannedItems />
       <RecurringList recurring={recurring || []} />
     </div>
   )

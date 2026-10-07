@@ -36,6 +36,7 @@ export const amountSchema = z.string().refine((value) => {
 export const entrySchema = z
   .object({
     account_id: z.uuid(),
+    tag_ids: z.array(z.uuid()).max(50).refine(ids => new Set(ids).size === ids.length, "Duplicate tag").optional(),
     category_id: z.uuid().nullable().default(null),
     wallet_id: z.uuid().nullable().default(null),
     type: z.enum(["income", "expense", "transfer"]),

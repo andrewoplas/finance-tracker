@@ -1,3 +1,4 @@
+import { TagManager } from "@/components/settings/tag-manager"
 import { createClient } from '@/lib/supabase/server'
 import { ThemePicker } from '@/components/theme-picker'
 import { CategoryManager } from '@/components/settings/category-manager'
@@ -20,6 +21,8 @@ export default async function SettingsPage() {
     .order('type')
     .order('name')
 
+  const tags = await supabase.from("tags").select("id,name").eq("user_id", user?.id).order("name").limit(501)
+
   return (
     <div className="space-y-6 max-w-3xl">
       <h1 className="text-2xl font-bold">Settings</h1>
@@ -28,6 +31,7 @@ export default async function SettingsPage() {
 
       <ProfileSettings profile={profile} userEmail={user?.email || ''} />
 
+      <TagManager tags={tags.error || (tags.data?.length ?? 0)>500 ? [] : tags.data ?? []} available={!tags.error && (tags.data?.length ?? 0)<=500} />
       <CategoryManager categories={categories || []} />
     </div>
   )

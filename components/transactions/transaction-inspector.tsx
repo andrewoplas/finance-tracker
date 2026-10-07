@@ -17,7 +17,11 @@ export function TransactionInspector({
   onSaved,
   creating = false,
   accounts = [],
+  tags = [],
+  tagsAvailable = false,
 }: {
+  tags?: { id: string; name: string }[];
+  tagsAvailable?: boolean;
   creating?: boolean;
   accounts?: { id: string; name: string }[];
   entry: LedgerEntry;
@@ -151,6 +155,7 @@ export function TransactionInspector({
         </p>
         {creating && <><div className="entry-type-switch" aria-label="Transaction type">{(["expense","income"] as const).map(type=><button type="button" key={type} aria-pressed={draft.type===type} onClick={()=>setDraft(d=>({...d,type,category_id:null,attribution:"personal",personal_amount:"0.00"}))}>{type==="expense"?"Expense":"Income"}</button>)}</div>{field("amount", "Amount (PHP)")}<label className="workflow-field">Account<select value={draft.account_id} onChange={e=>change("account_id",e.target.value)}>{accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label></>}
         {field("description", "Description")}
+        {tagsAvailable ? <fieldset className="tag-picker"><legend>Tags</legend><div>{tags.length ? tags.map(tag => <label key={tag.id}><input type="checkbox" checked={(draft.tag_ids ?? []).includes(tag.id)} onChange={e => setDraft(d => ({...d, tag_ids: e.target.checked ? [...(d.tag_ids ?? []), tag.id] : (d.tag_ids ?? []).filter(id=>id!==tag.id)}))} />{tag.name}</label>) : <p className="muted">Add tags in Settings.</p>}</div></fieldset> : <p className="muted">Tags unavailable. Existing tags will be preserved.</p>}
         {!creating && field("amount", "Amount (PHP)")}
         {field("date", "Purchase / transaction date", "date")}
         {creating ? <details><summary>Reporting & billing dates</summary><div className="workflow-form mt-3">{field("report_month", "Report month", "month")}{field("bill_date", "Bill date (optional)", "date")}{field("paid_date", "Paid date (optional)", "date")}</div></details> : <>{field("report_month", "Report month", "month")}{field("bill_date", "Bill date (optional)", "date")}{field("paid_date", "Paid date (optional)", "date")}</>}

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { ThemePicker } from '@/components/theme-picker'
 import { CategoryManager } from '@/components/settings/category-manager'
 import { ProfileSettings } from '@/components/settings/profile-settings'
 
@@ -23,6 +23,8 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <h1 className="text-2xl font-bold">Settings</h1>
+
+      <section className="surface"><h2>Appearance</h2><p className="muted">Choose a theme or follow your device. Saved on this browser.</p><ThemePicker /></section>
 
       <ProfileSettings profile={profile} userEmail={user?.email || ''} />
 

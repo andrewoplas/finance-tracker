@@ -632,3 +632,41 @@ button:focus-visible,a:focus-visible,summary:focus-visible { outline:2px solid v
  .category-row { padding:18px 0; border-bottom:1px solid #eee; }
  .category-track { height:4px; }
 }
+
+/* Appearance follows the same semantic palette across dashboard and dialogs. */
+.overview-controls { display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:12px; }
+.theme-picker { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted-foreground); }
+.theme-picker select { min-height:44px; border:1px solid var(--border); border-radius:999px; padding:8px 12px; background:var(--card); color:var(--foreground); }
+.dark {
+ --background:#141617; --foreground:#f1f3f2; --card:#1c1f20; --card-foreground:#f1f3f2;
+ --popover:#222627; --popover-foreground:#f1f3f2; --primary:#c6ff02; --primary-foreground:#141617;
+ --secondary:#272c2e; --secondary-foreground:#f1f3f2; --muted:#252a2b; --muted-foreground:#aeb8bb;
+ --accent:#303638; --accent-foreground:#f1f3f2; --border:#394144; --input:#414b4f; --ring:#c6ff02;
+ --sidebar:#191c1d; --sidebar-foreground:#f1f3f2; --sidebar-accent:#303638; --sidebar-accent-foreground:#f1f3f2;
+ --sidebar-border:#394144; --sidebar-primary:#c6ff02; --sidebar-primary-foreground:#141617; --sidebar-ring:#c6ff02;
+ --income:#79d6b3; --expense:#ffa7a7; --transfer:#a8c5e5; --destructive:#ff9191;
+ --finance-ink:#f1f3f2; --finance-frame:#272c2e;
+}
+.dark .surface,.dark .more-menu,.dark .period-chip,.dark .month-switch>span,.dark .activity-panel select,.dark .workflow-field input,.dark .workflow-field select,.dark .workflow-field textarea,.dark .reflection textarea { background:var(--card); color:var(--foreground); border-color:var(--border); }
+.dark .transaction-group,.dark .entry-type-switch,.dark .month-grid button,.dark .entry-sheet-heading button,.dark .amount-first-form>.workflow-field:not(.entry-amount),.dark .amount-first-form>details { background:var(--muted); }
+.dark .activity-icon,.dark .soft-badge { background:var(--accent); color:var(--foreground); }
+.dark .activity-icon.income { background:#203b31; color:var(--income); }
+.dark .activity-row:hover,.dark .more-menu a:hover,.dark .month-switch a:hover,.dark .category-options button[aria-pressed=true] { background:var(--accent); }
+.dark .workspace-tabs,.dark .activity-row,.dark .review-link,.dark .commitment,.dark .inspection dl>div,.dark .category-row,.dark .workflow-tabs,.dark .workflow-list>*,.dark .workflow-table th,.dark .workflow-table td { border-color:var(--border); }
+.dark .muted,.dark .eyebrow,.dark .workspace-tabs,.dark .summary-heading h2,.dark .summary-reference,.dark .chart-legend,.dark .chart-axis,.dark .chart-caption,.dark .activity-title small,.dark .activity-category,.dark .transaction-day h3,.dark .category-head,.dark .category-row small,.dark .commitment small,.dark .receivable>span,.dark .receivable small,.dark .overview-footer,.dark .empty-copy,.dark .unavailable p,.dark .inspection dt,.dark .budget-remaining,.dark .demo-banner,.dark .sidebar-note small { color:var(--muted-foreground); }
+.dark .value-income { color:var(--income); }.dark .value-expense { color:var(--expense); }.dark .value-transfer { color:var(--transfer); }
+.dark .review-count,.dark .solid-button,.dark .month-grid button[aria-pressed=true] { background:var(--finance-lime); color:#141617; }
+.dark .solid-button:hover { background:#dbff60; }
+.dark .entry-type-switch button[aria-pressed=true] { background:var(--card); color:var(--foreground); }
+.dark .category-track { background:var(--accent); }
+.dark .notice { background:#332d1c; border-color:#685632; color:#f5e1ad; }
+.dark .demo-sidebar { background:var(--sidebar); border-color:var(--border); }
+.dark .demo-sidebar nav a { color:var(--muted-foreground); }.dark .demo-sidebar nav a.active { background:var(--accent); color:var(--foreground); }
+.dark .mobile-tabbar,.dark .demo-mobile-nav { background:#191c1df5; border-color:var(--border); }
+.dark .mobile-tabbar>a { color:var(--muted-foreground); }.dark .mobile-tabbar>a[aria-current] { background:var(--accent); color:var(--foreground); }
+.dark .period-content input,.dark .category-picker input { border-color:var(--border); background:var(--card); color:var(--foreground); }
+@media(max-width:600px) { .overview-header { flex-wrap:wrap; }.overview-controls { width:100%; justify-content:space-between; }.theme-picker { font-size:11px; } }
+.dark .workflow-field,.dark .workflow-table-wrap small,.dark .batch-choice small { color:var(--muted-foreground); }
+.dark .workflow-page summary { color:var(--income); }
+.dark .workflow-item,.dark .workflow-table-wrap td,.dark .settlement-row,.dark .batch-choice { border-color:var(--border); }
+.dark .csv-source,.dark .workflow-section select { background:var(--card); color:var(--foreground); border-color:var(--border); }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ThemePicker } from "@/components/theme-picker";
 import Link from "next/link";
 import { MonthlyLink } from "./monthly-link";
 import {PeriodPicker} from "./period-picker";
@@ -165,7 +166,7 @@ export function MonthlyOverview({
       )}
       <header className="overview-header">
         <h1>{view === "transactions" ? "Transactions" : view === "analysis" ? "Spending plan" : view === "reflection" ? "Monthly reflection" : "Overview"}</h1>
-        <div className="month-switch">
+        <div className="overview-controls"><ThemePicker /><div className="month-switch">
           <Link
             aria-label="Previous month"
             href={`${base}?month=${shiftMonth(month, -1)}&view=${view}`}
@@ -180,7 +181,7 @@ export function MonthlyOverview({
             <ChevronRight size={18} />
           </Link>
         </div>
-      </header>
+      </div></header>
       <nav className="workspace-tabs" aria-label="Monthly views">
         <MonthlyLink loadedMonth={month} aria-current={view === "overview" ? "page" : undefined} href={route("overview")}>Overview</MonthlyLink>
         <MonthlyLink loadedMonth={month} aria-current={view === "transactions" ? "page" : undefined} href={route("transactions")}>Transactions</MonthlyLink>
@@ -237,20 +238,20 @@ export function MonthlyOverview({
                 >
                   <path
                     d="M0 95 H600 M0 50 H600"
-                    stroke="#e9e9e9"
+                    stroke="var(--border)"
                     fill="none"
                   />
                   {budget > 0 && (
                     <path
                       d={`M0 ${100 - (budget / max) * 85} H600`}
-                      stroke="#b8b8b8"
+                      stroke="var(--muted-foreground)"
                       strokeDasharray="5 5"
                       fill="none"
                     />
                   )}
                   <path
                     d={`M0 100 ${daily.map((n, i) => `L${(i * 600) / (dayCount - 1)} ${100 - (n / max) * 85}`).join(" ")} L600 100 Z`}
-                    fill="#f3f3f3"
+                    fill="var(--muted)"
                   />
                   <polyline
                     points={daily
@@ -260,7 +261,7 @@ export function MonthlyOverview({
                       )
                       .join(" ")}
                     fill="none"
-                    stroke="#131313"
+                    stroke="var(--finance-ink)"
                     strokeWidth="2.5"
                   />
                 </svg>

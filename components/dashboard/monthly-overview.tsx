@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { MonthlyLink } from "./monthly-link";
 import {PeriodPicker} from "./period-picker";
@@ -68,6 +68,7 @@ export function MonthlyOverview({
   view?: string;
   initialFilter?: string;
 }) {
+  const inspectorTitle = useRef<HTMLHeadingElement>(null);
   const router = useRouter();
   const search = useSearchParams();
   const requestedView = search.get("view") ?? initialView;
@@ -469,15 +470,16 @@ export function MonthlyOverview({
         open={!!selected}
         onOpenChange={(open) => !open && setSelected(null)}
       >
-        <DialogContent className="inspection workflow-dialog">
-          <DialogHeader>
-            <DialogTitle>Transaction details</DialogTitle>
-            <DialogDescription>Review the amount, dates, category, and personal share.</DialogDescription>
+        <DialogContent className="inspection workflow-dialog transaction-dialog" onOpenAutoFocus={event => { event.preventDefault(); inspectorTitle.current?.focus(); }}>
+          <DialogHeader className="transaction-dialog-header">
+            <DialogTitle ref={inspectorTitle} tabIndex={-1}>Transaction details</DialogTitle>
+            <DialogDescription>Edit details and mark this transaction reviewed.</DialogDescription>
           </DialogHeader>
           {selected && (
             <TransactionInspector
               key={selected.id}
               entry={selected}
+              onCancel={() => setSelected(null)}
               categories={data.categories}
               tags={data.tags ?? []}
               tagsAvailable={data.tagsAvailable ?? demo}

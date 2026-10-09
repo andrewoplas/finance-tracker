@@ -2,6 +2,8 @@
 
 # 💰 Finance Tracker
 
+ChatGPT expense logging: see [dedicated GPT setup](docs/CHATGPT.md) for natural shorthand such as `Badminton queue 250pesos`, learned account/category choices, and the importable Actions schema.
+
 A personal finance management app built with Next.js 14, Supabase, and Tailwind CSS.
 
 ## Features

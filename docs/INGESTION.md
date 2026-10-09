@@ -1,5 +1,7 @@
 # Ingestion API and quick-log skill
 
+For conversational expenses in a dedicated ChatGPT GPT, see [ChatGPT setup](CHATGPT.md). The additive `20261010000000_conversational_quick_log.sql` upgrade accepts peso shorthand and learns consistent account/category/tag choices from reviewed matching expenses. It requires the original ingestion migrations below. The GPT Actions schema is `public/chatgpt-actions.json`; connection and key configuration remain separate setup steps.
+
 See the canonical [setup guide](../.agents/skills/finance-quick-log/references/api.md) for HTTP contracts, scope/credential setup, safe retries, and possible Shortcut setup. The callable skill is [finance-quick-log](../.agents/skills/finance-quick-log/SKILL.md).
 
 Activation migrations: `20261007070000_card_sms_inbox.sql` and `20261007190256_quick_log.sql`. Both are additive and repeatable; they create no keys or ledger entries. Production application requires explicit action-time approval because they enable new persistent scoped access. Existing historical data, tags/backfill, balance baselines and plans are untouched.

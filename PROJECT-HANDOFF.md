@@ -2,6 +2,8 @@
 
 Verified 2026-10-11 (Asia/Manila).
 
+Publishing update (2026-10-11): following Drew's request to commit and push, local `main` incorporated GitHub commit `1914928` through a history-preserving merge. Its ChatGPT Actions implementation and learned-default instructions are now in the checkout. The consolidation findings and verification below describe the earlier `ccf454b` snapshot; they do not certify the merged code. Cash-default commit `b7b8cc7` remains unrecovered, and remote MCP activation and pending expenses remain unconfirmed. No migrations or explicit deployment actions were performed.
+
 ## Workspace consolidation
 
 Canonical workspace: `/Users/drew/Documents/vibe-coding/finance-tracker`.

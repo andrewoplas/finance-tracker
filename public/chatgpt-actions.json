@@ -1,0 +1,448 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Finance Tracker expense logging",
+    "version": "1.0.0",
+    "description": "Preview and record personal PHP expenses. Learns consistent account/category/tag choices from owned reviewed matching expenses. Dates default to today in Asia/Manila. Only claim saved after a recorded receipt with persisted=true and a transaction_id. Preserve the exact preview retry object for commit and every retry."
+  },
+  "servers": [
+    {
+      "url": "https://finance-tracker-eosin-eight.vercel.app"
+    }
+  ],
+  "security": [
+    {
+      "quickLogKey": []
+    }
+  ],
+  "paths": {
+    "/api/v1/chatgpt/preview": {
+      "post": {
+        "operationId": "previewExpense",
+        "summary": "Resolve an expense without saving it",
+        "description": "Send the user's expense text. The server supplies the request UUID. If account/category is unclear, ask the user and preview the clarified text. No ledger entry or learned preference is written.",
+        "x-openai-isConsequential": false,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved preview with a complete retry object to use as the commit body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid, revoked or expired key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale preview or retry conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Clarification required; nothing saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit; preserve the retry object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable; save outcome may be unconfirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chatgpt/commit": {
+      "post": {
+        "operationId": "recordExpense",
+        "summary": "Record an authorized expense from its preview",
+        "description": "Use the preview's retry object unchanged as the request body. On timeout retry this same body, including request_id. Never generate a new ID. needs_review means a possible duplicate was held and does NOT count as saved spending.",
+        "x-openai-isConsequential": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Retry"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Idempotent receipt for a completed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Receipt"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Recorded expense or held duplicate; inspect status and persisted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Receipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid, revoked or expired key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale preview or retry conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Clarification required; nothing saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit; preserve the retry object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unavailable; save outcome may be unconfirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "quickLogKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "An ft_quick_ scoped expense-write key created by the owner in Finance Tracker Settings. Configure privately in GPT Actions authentication, never in the conversation."
+      }
+    },
+    "schemas": {
+      "PreviewInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Expense description and exact positive PHP amount, optionally a full YYYY-MM-DD date and explicit account name at the end. Optional exp prefix; pesos, PHP and ₱ accepted. Never guess the amount.",
+            "example": "Badminton queue 250pesos"
+          }
+        }
+      },
+      "Retry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "text",
+          "date",
+          "digest"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Server-issued UUID from preview; preserve on retry."
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Exact text returned in preview.retry.",
+            "example": "Badminton queue 250pesos"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Exact date returned in preview.retry."
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "Exact digest returned in preview.retry."
+          }
+        }
+      },
+      "Preview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "entry",
+          "summary",
+          "date",
+          "digest",
+          "persisted",
+          "retry"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "entry": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "account_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "category_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "account",
+              "category",
+              "tags"
+            ],
+            "properties": {
+              "account": {
+                "type": "string"
+              },
+              "category": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "persisted": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "retry": {
+            "$ref": "#/components/schemas/Retry"
+          }
+        }
+      },
+      "Receipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status",
+          "persisted",
+          "duplicate"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "recorded",
+              "needs_review"
+            ]
+          },
+          "transaction_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Present only when recorded. Required evidence for claiming an expense was saved."
+          },
+          "persisted": {
+            "type": "boolean",
+            "description": "True only for a recorded ledger entry."
+          },
+          "duplicate": {
+            "type": "boolean",
+            "description": "True for replay of a completed request, not a new expense."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "account_required/account_ambiguous: ask which exact account. category_ambiguous: ask category. preview_required: resolve a fresh preview; do not claim saved. For unknown save outcomes retain the exact commit body."
+          }
+        }
+      }
+    }
+  }
+}

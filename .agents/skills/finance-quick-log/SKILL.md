@@ -1,15 +1,15 @@
 ---
 name: finance-quick-log
-description: Parse and record explicitly requested personal PHP expenses in Andrew's Finance Tracker using shorthand such as exp badminton food 210 cash. Clarify missing accounts and uncertain events; examples and setup discussions do not authorize saving.
+description: Parse and record explicitly requested personal PHP expenses in Andrew's Finance Tracker using shorthand such as Badminton queue 250pesos. Reuse server-learned choices and clarify ambiguous accounts; examples and setup discussions do not authorize saving.
 ---
 
 Use the bundled executable HTTP client through the shell tool. This is a callable script integration, not a remote MCP connection. Read [the API setup guide](references/api.md) when installing or configuring it.
 
-Every expense must include an explicit owned account at the end. There is no default account. Do not infer Cash, RCBC, a wallet, or a last-used account. Exact owned account names work; RCBC works only when the server finds one matching owned account. Ask for the full account name when missing or ambiguous.
+Let the server resolve the account from consistent reviewed matching expenses, or the only active owned account. Do not invent Cash, RCBC, a wallet, or a last-used account. An explicit exact owned account name at the end overrides learning; RCBC works only when the server finds one matching owned account. Ask for the full account name on account_required/account_ambiguous. Learning requires the conversational quick-log migration; older servers still require explicit accounts.
 
 Only handle personal purchases here. Payments, repayments, refunds, declines, OTPs, shared/reimbursable expenses, transfers and uncertain events require clarification or the app's existing workflows. Never send bank credentials, a full card number, CVV or OTP.
 
-Amounts are positive exact decimal strings. Dates default to the server's owner-local today (Asia/Manila). Use a full YYYY-MM-DD date for historical expenses; do not infer a year from an incomplete date. Standalone `food` selects the unique existing Food tag. `#Tag` and `category:Name` select only existing unique owned names without spaces. Leave category uncategorized unless explicitly supplied; never derive it from a merchant. Unknown or ambiguous names ask for clarification and never create taxonomy.
+Amounts must be explicit positive exact PHP decimals. The server accepts `250pesos`, `PHP250`, `₱250` and `250 pesos`. Dates default to owner-local today (Asia/Manila). Use a full YYYY-MM-DD date for historical expenses; do not infer a year from an incomplete date. Let the server resolve categories/tags from reviewed matching expenses and its existing-category vocabulary. Inspect the resolved preview; do not fabricate taxonomy. In legacy `exp` shorthand, standalone `food` selects the unique Food tag. `#Tag`, `category:Name` and `category:"Food & Dining"` select existing unique owned names. Unknown or ambiguous values require clarification.
 
 1. Verify readiness with `python3 <skill-root>/scripts/quick_log.py status`. This reads local configuration only. If unavailable, explain the precise setup step. Do not generate/configure keys or expand access without action-time authorization; prefer Settings → Transaction API self-service key creation.
 2. For an actual request to log an expense, pass the exact text to `python3 <skill-root>/scripts/quick_log.py preview` as a JSON object on stdin: `{"text":"exp badminton food 210 cash"}`. The client assigns a UUID. No write occurs. Server errors about account, amount, date, tags or category require clarification. Use JSON stdin, never shell-interpolate finance text or keys.

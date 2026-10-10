@@ -14,7 +14,7 @@ const receipt = z.object({id:z.uuid(),status:z.enum(['recorded','needs_review'])
 const errors = ['unauthorized','invalid_input','idempotency_conflict','rate_limited','preview_required','inbox_full',
  'use_exp_description_amount_account','unsupported_event','account_required','account_ambiguous','amount_ambiguous','invalid_amount',
  'date_ambiguous','invalid_date','use_exact_amount_and_full_date','tag_ambiguous','tag_unavailable_or_ambiguous','category_ambiguous',
- 'category_unavailable_or_ambiguous','amount_required','description_required'];
+ 'category_unavailable_or_ambiguous','amount_required','description_required','currency_not_supported'];
 export async function handleQuickLog(request:Request,submit:QuickRpc) {
  const origin=request.headers.get('origin');
  if(origin && origin!==new URL(request.url).origin)return json({error:'origin_rejected'},403);

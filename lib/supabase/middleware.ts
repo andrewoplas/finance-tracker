@@ -6,7 +6,9 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
-  if (request.nextUrl.pathname === '/demo' || request.nextUrl.pathname.startsWith('/demo/') || request.nextUrl.pathname.startsWith('/api/')) return supabaseResponse
+  // The public Actions contract contains no user data and must be importable
+  // without a browser session. The expense endpoints still verify their key.
+  if (request.nextUrl.pathname === '/chatgpt-actions.json' || request.nextUrl.pathname === '/demo' || request.nextUrl.pathname.startsWith('/demo/') || request.nextUrl.pathname.startsWith('/api/')) return supabaseResponse
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     const url = request.nextUrl.clone(); url.pathname = '/demo'; url.search = ''; return NextResponse.redirect(url)
   }

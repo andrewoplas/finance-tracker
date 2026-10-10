@@ -2,6 +2,7 @@
 """Credential-free checks for this approved, disabled review deployment only."""
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -20,9 +21,10 @@ opener = urllib.request.build_opener(NoRedirect)
 
 
 def fetch(url, data=None):
+    accept = "text/html,application/json,text/event-stream" if url.startswith(PREVIEW) else "application/vnd.github+json"
     request = urllib.request.Request(
         url, data=data,
-        headers={"User-Agent": "finance-disabled-preview-check", "Accept": "application/json, text/event-stream",
+        headers={"User-Agent": "finance-disabled-preview-check", "Accept": accept,
                  **({"Content-Type": "application/json"} if data else {})},
     )
     try:
@@ -77,7 +79,8 @@ def main():
               and b"Authentication Required" in body):
             outcome = "vercel_authentication_gate_application_unobserved"
         elif (status == 401 and headers.get("x-vercel-id")
-              and (error_code == "AUTHENTICATION_REQUIRED" or error == "Authentication Required")):
+              and (isinstance(error_code, str) and error_code.lower() == "authentication_required"
+                   or isinstance(error, str) and error.lower() == "authentication required")):
             outcome = "vercel_authentication_gate_application_unobserved"
         elif status in (302, 303, 307, 308):
             location = urllib.parse.urlparse(headers.get("Location", ""))
@@ -86,9 +89,10 @@ def main():
             outcome = "vercel_authentication_gate_application_unobserved"
         else:
             # No body/header dump: even an unexpected response must not leak data.
-            safe_code = error_code if isinstance(error_code, str) and error_code.isupper() and len(error_code) < 80 else None
+            safe_code = error_code if isinstance(error_code, str) and re.fullmatch(r"[A-Za-z_]{1,80}", error_code) else None
             print(json.dumps({"path": path, "status": status, "vercel_response": bool(headers.get("x-vercel-id")),
-                              "error_code": safe_code}), flush=True)
+                              "error_code": safe_code, "response_keys": sorted(parsed) if isinstance(parsed, dict) else None,
+                              "known_error": error if error in ("Unauthorized", "Authentication required", "OAuth access token required", "Invalid OAuth access token") else None}), flush=True)
             raise RuntimeError(f"Unexpected HTTP {status} ({content_type}) for {path}")
         result = {"method": "POST" if data else "GET", "path": path, "status": status, "result": outcome}
         outcomes.append(result)

@@ -10,5 +10,5 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Verify exact-commit deployment and unauthenticated denial
+      - name: Verify exact-commit deployment and unauthenticated access denial
         run: python3 -B scripts/check-disabled-mcp-preview.py

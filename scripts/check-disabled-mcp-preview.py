@@ -65,13 +65,19 @@ def main():
     ]:
         status, headers, body = fetch(PREVIEW + path, data)
         content_type = headers.get("Content-Type", "")
-        if status == 404 and "application/json" in content_type and json.loads(body) == {"error": expected}:
+        parsed = json.loads(body) if "application/json" in content_type else None
+        error = parsed.get("error") if isinstance(parsed, dict) else None
+        error_code = error.get("code") if isinstance(error, dict) else None
+        if status == 404 and parsed == {"error": expected}:
             if "no-store" not in headers.get("Cache-Control", ""):
                 raise RuntimeError("Disabled response must not be cached")
             outcome = "application_disabled"
         elif (status == 401 and "text/html" in content_type
               and headers.get("x-vercel-id")
               and b"Authentication Required" in body):
+            outcome = "vercel_authentication_gate_application_unobserved"
+        elif (status == 401 and headers.get("x-vercel-id")
+              and (error_code == "AUTHENTICATION_REQUIRED" or error == "Authentication Required")):
             outcome = "vercel_authentication_gate_application_unobserved"
         elif status in (302, 303, 307, 308):
             location = urllib.parse.urlparse(headers.get("Location", ""))
@@ -80,6 +86,9 @@ def main():
             outcome = "vercel_authentication_gate_application_unobserved"
         else:
             # No body/header dump: even an unexpected response must not leak data.
+            safe_code = error_code if isinstance(error_code, str) and error_code.isupper() and len(error_code) < 80 else None
+            print(json.dumps({"path": path, "status": status, "vercel_response": bool(headers.get("x-vercel-id")),
+                              "error_code": safe_code}), flush=True)
             raise RuntimeError(f"Unexpected HTTP {status} ({content_type}) for {path}")
         result = {"method": "POST" if data else "GET", "path": path, "status": status, "result": outcome}
         outcomes.append(result)

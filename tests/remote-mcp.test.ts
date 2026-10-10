@@ -11,6 +11,7 @@ import { previewSchema, type RemoteAction } from '../lib/mcp/remote/contracts';
 import { manilaToday } from '../lib/finance/core';
 import { consentPath, loginReturnPath, oauthCallback } from '../lib/mcp/remote/consent';
 import { checkProviderMetadata, probeProvider } from '../lib/mcp/remote/provider';
+import { remoteConfig } from '../lib/mcp/remote/config';
 
 const owner = '10000000-0000-4000-8000-000000000001', other = '10000000-0000-4000-8000-000000000002';
 const account = '20000000-0000-4000-8000-000000000001', foreign = '20000000-0000-4000-8000-000000000002';
@@ -18,6 +19,19 @@ const clientId = '30000000-0000-4000-8000-000000000001', client2 = '30000000-000
 const sessionId = '40000000-0000-4000-8000-000000000001', session2 = '40000000-0000-4000-8000-000000000002';
 const config = { enabled: true, resource: 'https://tracker.example/api/mcp/expenses', issuer: 'https://project.supabase.co/auth/v1', clientIds: [clientId] };
 const principal: Principal = { owner, clientId, sessionId, token: 'synthetic-token' };
+
+test('review deployment cannot be activated by inherited hosting environment settings', t => {
+  const overrides = { FINANCE_MCP_REMOTE_ENABLED:'true', FINANCE_MCP_CLIENT_IDS:clientId,
+    FINANCE_MCP_RESOURCE:config.resource, NEXT_PUBLIC_SUPABASE_URL:'https://project.supabase.co' };
+  for (const [key,value] of Object.entries(overrides)) {
+    const original=process.env[key];
+    t.after(()=>{ if(original===undefined) delete process.env[key]; else process.env[key]=original; });
+    process.env[key]=value;
+  }
+  assert.equal(remoteConfig().enabled,false);
+  assert.deepEqual(remoteConfig().clientIds,[]);
+  assert.equal(protectedResource(remoteConfig()).status,404);
+});
 const claims = (extra: Record<string, unknown> = {}) => ({
   iss: config.issuer, sub: owner, aud: 'authenticated', role: 'finance_mcp', client_id: clientId, session_id: sessionId,
   exp: Math.floor(Date.now() / 1000) + 1800, iat: Math.floor(Date.now() / 1000), is_anonymous: false,

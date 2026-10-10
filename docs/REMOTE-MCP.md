@@ -2,7 +2,7 @@
 
 This branch adds `/api/mcp/expenses`, a disabled-by-default remote Streamable HTTP MCP for chat expense logging. `/api/mcp` remains the existing localhost/session adapter. The new endpoint exposes exactly `expense_context`, `expense_preview`, and `expense_commit`; there are no balance, ledger-search, credential, transfer, edit, delete or undo tools.
 
-**Status: implemented and tested locally; not deployed, activated, connected or verified in Andrew's dot.** No OAuth clients, secrets, consents, integration rows or live expenses were created. The eight separately pending Cash entries were not used or imported. The other SMS task/workspace was not modified.
+**Status: implemented and tested locally; authorized for branch push and an isolated disabled Vercel preview only.** `activationApproved=false` in `lib/mcp/remote/config.ts` forces MCP off and its effective client allowlist empty, even if hosting settings request activation. A separately approved code change is required to unlock future staging/production OAuth tests; environment flags alone cannot do it. No OAuth clients, secrets, consents, integration rows or live expenses were created. The eight separately pending Cash entries were not used or imported. The other SMS task/workspace was not modified.
 
 ## Expense contract
 

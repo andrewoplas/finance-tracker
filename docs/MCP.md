@@ -1,5 +1,7 @@
 # Local MCP adapter
 
+For the separate expense-only remote OAuth implementation and its unactivated setup proposal, see [REMOTE-MCP.md](REMOTE-MCP.md). The local adapter described below keeps its existing boundary.
+
 `/api/mcp` is a disabled-by-default, localhost-only MCP transport adapter. It is **not a connected chat integration**, OAuth resource server, or remote bearer-token endpoint. No credentials, client registration, grants, live database setup, or deployment were created.
 
 ## Implemented contract

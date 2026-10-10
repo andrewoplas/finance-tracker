@@ -1,0 +1,14 @@
+name: Disabled MCP preview
+on:
+  push:
+    branches: [feat/remote-expense-mcp]
+permissions:
+  contents: read
+jobs:
+  unauthenticated-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact-commit deployment and unauthenticated access denial
+        run: python3 -B scripts/check-disabled-mcp-preview.py

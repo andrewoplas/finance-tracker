@@ -1,5 +1,6 @@
+import { PlanningTabs } from "@/components/layout/planning-tabs";
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeading } from '@/components/layout/page-heading'
 import { BudgetList } from '@/components/budgets/budget-list'
 import { AddBudgetButton } from '@/components/budgets/add-budget-button'
 
@@ -37,11 +38,9 @@ export default async function BudgetsPage() {
   })
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Budgets</h1>
-        <AddBudgetButton />
-      </div>
+    <div className="brand-page space-y-6">
+      <PlanningTabs />
+      <PageHeading title="Budgets" description="Set a spending limit for each category and see how the month is going." action={<AddBudgetButton />} />
 
       <BudgetList budgets={budgets || []} spentByCategory={spentByCategory} />
     </div>

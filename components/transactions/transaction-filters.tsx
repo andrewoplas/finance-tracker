@@ -67,9 +67,10 @@ export function TransactionFilters({ accounts, categories, onFilterChange }: Tra
     <div className="space-y-4">
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search transactions..."
+          aria-label="Search transactions"
           value={filters.search}
           onChange={(e) => updateFilter('search', e.target.value)}
           className="pl-10"
@@ -79,7 +80,7 @@ export function TransactionFilters({ accounts, categories, onFilterChange }: Tra
       {/* Filters Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <Select value={filters.type || ALL_VALUE} onValueChange={(v) => updateFilter('type', v)}>
-          <SelectTrigger>
+          <SelectTrigger aria-label="Transaction type">
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
           <SelectContent>
@@ -91,7 +92,7 @@ export function TransactionFilters({ accounts, categories, onFilterChange }: Tra
         </Select>
 
         <Select value={filters.accountId || ALL_VALUE} onValueChange={(v) => updateFilter('accountId', v)}>
-          <SelectTrigger>
+          <SelectTrigger aria-label="Account">
             <SelectValue placeholder="All Accounts" />
           </SelectTrigger>
           <SelectContent>
@@ -105,7 +106,7 @@ export function TransactionFilters({ accounts, categories, onFilterChange }: Tra
         </Select>
 
         <Select value={filters.categoryId || ALL_VALUE} onValueChange={(v) => updateFilter('categoryId', v)}>
-          <SelectTrigger>
+          <SelectTrigger aria-label="Category">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
@@ -132,6 +133,7 @@ export function TransactionFilters({ accounts, categories, onFilterChange }: Tra
           <Input
             type="date"
             placeholder="From"
+            aria-label="From date"
             value={filters.dateFrom}
             onChange={(e) => updateFilter('dateFrom', e.target.value)}
           />
@@ -140,6 +142,7 @@ export function TransactionFilters({ accounts, categories, onFilterChange }: Tra
           <Input
             type="date"
             placeholder="To"
+            aria-label="To date"
             value={filters.dateTo}
             onChange={(e) => updateFilter('dateTo', e.target.value)}
           />

@@ -54,7 +54,7 @@ export function MonthlyTrend({ transactions }: MonthlyTrendProps) {
         <CardHeader>
           <CardTitle>Monthly Trend</CardTitle>
         </CardHeader>
-        <CardContent className="text-center py-8 text-gray-500">
+        <CardContent className="text-center py-8 text-muted-foreground">
           No data yet
         </CardContent>
       </Card>
@@ -65,25 +65,27 @@ export function MonthlyTrend({ transactions }: MonthlyTrendProps) {
     <Card>
       <CardHeader>
         <CardTitle>Monthly Trend</CardTitle>
-        <p className="text-sm text-gray-500">Last 6 months</p>
+        <p className="text-sm text-muted-foreground">Last 6 months</p>
       </CardHeader>
       <CardContent>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+              <XAxis dataKey="month" tick={{ fill: "var(--muted-foreground)" }} />
               <YAxis
+                tick={{ fill: "var(--muted-foreground)" }}
                 tickFormatter={(value) =>
                   `₱${(value / 1000).toFixed(0)}k`
                 }
               />
               <Tooltip
+                contentStyle={{ background: "var(--popover)", borderColor: "var(--border)", color: "var(--foreground)", borderRadius: 12 }}
                 formatter={(value) => formatCurrency(Number(value))}
               />
               <Legend />
-              <Bar dataKey="Income" fill="#22c55e" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Income" fill="var(--income)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Expenses" fill="var(--expense)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

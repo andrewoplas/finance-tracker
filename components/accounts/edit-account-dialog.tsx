@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import {
   Select,
@@ -68,7 +69,8 @@ export function EditAccountDialog({ account, open, onOpenChange }: EditAccountDi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Account</DialogTitle>
+          <DialogTitle>Edit account</DialogTitle>
+          <DialogDescription>Update account details. Use reconciliation to correct its balance.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -97,16 +99,16 @@ export function EditAccountDialog({ account, open, onOpenChange }: EditAccountDi
             </Select>
           </div>
 
-          <p className="text-sm text-gray-500">
-            Current balance: ₱{Number(account.balance).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+          <p className="text-sm text-muted-foreground">
+            Current balance: {account.opening_balance === null ? 'Unknown' : `₱${Number(account.balance).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`}
           </p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground">
             {account.opening_balance === null ? 'Opening balance needs reconciliation.' : 'Balance is rebuilt from its opening baseline and ledger.'}
           </p>
 
           <Link className="text-button" href="/dashboard/plans#reconcile">Reconcile balance with an audit trail →</Link>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Saving...' : 'Save Changes'}
+            {loading ? 'Saving...' : 'Save changes'}
           </Button>
         </form>
       </DialogContent>

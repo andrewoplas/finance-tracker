@@ -43,7 +43,7 @@ export function BudgetList({ budgets, spentByCategory }: BudgetListProps) {
   if (budgets.length === 0) {
     return (
       <Card>
-        <CardContent className="py-12 text-center text-gray-500">
+        <CardContent className="py-12 text-center text-muted-foreground">
           No budgets yet. Set up your first budget to track spending!
         </CardContent>
       </Card>
@@ -66,19 +66,19 @@ export function BudgetList({ budgets, spentByCategory }: BudgetListProps) {
                   <span className="text-2xl">{category?.icon || '📊'}</span>
                   <div>
                     <h3 className="font-semibold">{category?.name}</h3>
-                    <p className="text-sm text-gray-500 capitalize">{budget.period}</p>
+                    <p className="text-sm text-muted-foreground capitalize">{budget.period}</p>
                   </div>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" aria-label={`Manage ${budget.category?.name || 'budget'}`}>
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
                       onClick={() => handleDelete(budget)}
-                      className="text-red-600"
+                      className="text-expense"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
@@ -89,29 +89,29 @@ export function BudgetList({ budgets, spentByCategory }: BudgetListProps) {
 
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className={isOverBudget ? 'text-red-600 font-medium' : ''}>
+                  <span className={isOverBudget ? 'text-expense font-medium' : ''}>
                     {formatCurrency(spent)} spent
                   </span>
-                  <span className="text-gray-500">
+                  <span className="text-muted-foreground">
                     of {formatCurrency(Number(budget.amount))}
                   </span>
                 </div>
 
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className={`h-full transition-all ${
                       isOverBudget
-                        ? 'bg-red-500'
+                        ? 'bg-expense'
                         : percentage > 80
-                        ? 'bg-yellow-500'
-                        : 'bg-green-500'
+                        ? 'bg-warning'
+                        : 'bg-income'
                     }`}
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
 
                 {isOverBudget && (
-                  <p className="text-sm text-red-600">
+                  <p className="text-sm text-expense">
                     ⚠️ Over budget by {formatCurrency(spent - Number(budget.amount))}
                   </p>
                 )}

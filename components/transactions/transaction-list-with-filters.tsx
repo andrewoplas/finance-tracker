@@ -107,13 +107,13 @@ export function TransactionListWithFilters({
       />
 
       <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-muted-foreground">
           {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
           {filteredTransactions.length > 0 && (
             <span className="ml-2">
-              • Income: <span className="text-green-600">{formatCurrency(stats.income)}</span>
-              • Expenses: <span className="text-red-600">{formatCurrency(stats.expense)}</span>
-              • Net: <span className={stats.net >= 0 ? 'text-green-600' : 'text-red-600'}>
+              • Income: <span className="text-income">{formatCurrency(stats.income)}</span>
+              • Expenses: <span className="text-expense">{formatCurrency(stats.expense)}</span>
+              • Net: <span className={stats.net >= 0 ? 'text-income' : 'text-expense'}>
                 {formatCurrency(stats.net)}
               </span>
             </span>

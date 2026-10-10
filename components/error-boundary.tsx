@@ -3,6 +3,7 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { AlertCircle } from 'lucide-react'
+import { BrandLogo } from '@/components/layout/brand-logo'
 
 interface Props {
   children: React.ReactNode
@@ -27,12 +28,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="text-center space-y-4 max-w-md">
+        <div className="auth-shell">
+          <BrandLogo />
+          <div className="surface status-page space-y-4">
             <div className="h-16 w-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
               <AlertCircle className="h-8 w-8 text-destructive" />
             </div>
-            <h2 className="text-xl font-semibold">Something went wrong</h2>
+            <h1>Something went wrong</h1>
             <p className="text-muted-foreground text-sm">
               We couldn’t load this view. Please try again.
             </p>

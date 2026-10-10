@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
@@ -106,13 +107,14 @@ export function AddRecurringButton() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4" />
           Add Recurring
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Recurring Transaction</DialogTitle>
+          <DialogTitle>Add recurring transaction</DialogTitle>
+          <DialogDescription>Set up a repeating transaction schedule.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Type Toggle */}
@@ -218,7 +220,7 @@ export function AddRecurringButton() {
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Adding...' : 'Add Recurring Transaction'}
+            {loading ? 'Adding...' : 'Add recurring transaction'}
           </Button>
         </form>
       </DialogContent>

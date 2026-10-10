@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Plus } from 'lucide-react'
@@ -94,19 +95,20 @@ export function AddWalletButton() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Wallet
+          <Plus className="h-4 w-4" />
+          Add wallet
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Wallet</DialogTitle>
+          <DialogTitle>Add wallet</DialogTitle>
+          <DialogDescription>Create a wallet to organize your money.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Quick Add Presets */}
           <div>
-            <p className="text-sm text-gray-500 mb-2">Quick Add:</p>
+            <p className="text-sm text-muted-foreground mb-2">Quick Add:</p>
             <div className="flex gap-2">
               {DEFAULT_WALLETS.map((preset) => (
                 <Button
@@ -128,7 +130,7 @@ export function AddWalletButton() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">Or create custom</span>
+              <span className="bg-card px-2 text-muted-foreground">Or create custom</span>
             </div>
           </div>
 

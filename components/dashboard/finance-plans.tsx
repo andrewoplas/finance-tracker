@@ -1,9 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ArrowLeft, CalendarDays, ChevronDown, CreditCard, History, Plus, Wallet } from "lucide-react";
 import Link from "next/link";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -17,10 +19,8 @@ import {
 import { commitOperation } from "@/lib/finance/client";
 import { installments, manilaToday, minor } from "@/lib/finance/core";
 import type { Operation } from "@/lib/finance/contracts";
-const money = (v: string | number) =>
-  new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(
-    Number(v),
-  );
+const currency = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
+const money = (v: string | number) => currency.format(Number(v));
 type Mode =
   | { kind: "installments" }
   | { kind: "receivable" }
@@ -32,8 +32,38 @@ type Mode =
       targetType: "account" | "wallet";
     }
   | { kind: "confirm"; operation: Operation; message: string };
-export function FinancePlans({ demo = false }: { demo?: boolean }) {
+export function FinancePlans({ demo = false, children }: { demo?: boolean; children?: ReactNode }) {
   const { data, error, loadedAt, refresh } = useFinanceWorkspace(demo);
+  const reconciliation = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const revealBalanceCheck = () => {
+      if (window.location.hash === "#reconcile" && reconciliation.current) {
+        reconciliation.current.open = true;
+      }
+    };
+    revealBalanceCheck();
+    window.addEventListener("hashchange", revealBalanceCheck);
+    return () => window.removeEventListener("hashchange", revealBalanceCheck);
+  }, [data]);
+  const overview = useMemo(() => {
+    const transactions = new Map(data?.transactions.map((t) => [t.id, t]));
+    const schedules = new Map<string, InstallmentItem[]>();
+    let remaining = 0;
+    for (const item of data?.installment_balances ?? []) {
+      remaining += minor(String(item.remaining));
+      const items = schedules.get(item.plan_id) ?? [];
+      items.push(item);
+      schedules.set(item.plan_id, items);
+    }
+    for (const items of schedules.values()) items.sort((a, b) => a.sequence - b.sequence);
+    return {
+      transactions,
+      schedules,
+      remaining: remaining / 100,
+      active: data?.installment_plans.filter((p) => schedules.get(p.id)?.some((i) => Number(i.remaining) > 0)).length ?? 0,
+      unknown: (data?.accounts ?? []).filter((a) => a.opening_balance === null).length,
+    };
+  }, [data]);
   const [mode, setMode] = useState<Mode | null>(null),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState(""),
@@ -184,17 +214,17 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
     } catch {}
   }
   return (
-    <div className="overview workflow-page">
+    <div className="overview workflow-page plans-page">
       <header className="overview-header">
         <div>
-          <h1>Plans & shared money</h1>
+          <span className="eyebrow plans-eyebrow">YOUR MONEY, LOOKING AHEAD</span>
+          <h1>Installments</h1>
           <p>
-            Keep bills, repayments, and balances clear—without counting them
-            twice.
+            Track card purchases, payment schedules, and balances.
           </p>
         </div>
         <Link className="text-button" href={demo ? "/demo" : "/dashboard"}>
-          Back to overview
+          <ArrowLeft size={15} aria-hidden="true" /> Overview
         </Link>
       </header>
       {demo && (
@@ -220,33 +250,45 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
       )}
       {data && (
         <>
-          <section className="surface workflow-section">
-            <div className="section-heading">
-              <h2>Installments</h2>
+          <div className="plans-summary" aria-label="Plans at a glance">
+            <a href="#installments" className="plans-stat">
+              <span><CreditCard size={18} aria-hidden="true" /> Left to pay</span>
+              <strong>{money(overview.remaining)}</strong>
+              <small>{overview.active} active installment {overview.active === 1 ? "plan" : "plans"}</small>
+            </a>
+            <a href="#reconcile" className="plans-stat" onClick={() => {
+              if (reconciliation.current) reconciliation.current.open = true;
+            }}>
+              <span><Wallet size={18} aria-hidden="true" /> Balance check</span>
+              <strong>{overview.unknown ? `${overview.unknown} to check` : `${data.accounts.length} balances`}</strong>
+              <small>{overview.unknown ? "Opening balances need confirmation" : data.accounts.length ? "Opening balances are recorded" : "Add an account to get started"}</small>
+            </a>
+          </div>
+          <div className={`plans-primary${data.installment_plans.length ? " has-items" : ""}`}>
+          <section className="surface workflow-section" id="installments" aria-labelledby="installments-heading">
+            <div className="section-heading plans-section-heading">
+              <div className="plans-section-title"><CreditCard size={20} aria-hidden="true" /><h2 id="installments-heading">Installments</h2></div>
               <button
                 className="solid-button"
                 onClick={() => open({ kind: "installments" })}
               >
-                Plan a card purchase
+                <Plus size={16} aria-hidden="true" /> New plan
               </button>
             </div>
             <p className="muted">
-              The purchase records the liability once. Payments move money to
-              the card; they are not new expenses.
+              Split a recorded card purchase into a payment schedule.
             </p>
             {!data.installment_plans.length && (
-              <p className="empty-copy">
-                No installment plans yet. Start from a credit-card expense
-                already in your activity.
-              </p>
+              <div className="plans-empty">
+                <span className="plans-empty-icon"><CalendarDays size={24} aria-hidden="true" /></span>
+                <h3>Make room for bigger purchases</h3>
+                <p>Choose a card expense from your activity to track each installment and its due date.</p>
+                <button className="text-button" onClick={() => open({ kind: "installments" })}>Plan your first purchase →</button>
+              </div>
             )}
             {data.installment_plans.map((plan) => {
-              const purchase = data.transactions.find(
-                (t) => t.id === plan.transaction_id,
-              );
-              const items = data.installment_balances
-                .filter((s) => s.plan_id === plan.id)
-                .sort((a, b) => a.sequence - b.sequence);
+              const purchase = overview.transactions.get(plan.transaction_id);
+              const items = overview.schedules.get(plan.id) ?? [];
               return (
                 <article key={plan.id} className="workflow-item">
                   <div className="section-heading">
@@ -270,6 +312,7 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
                   </p>
                   <div className="workflow-table-wrap">
                     <table>
+                      <caption className="sr-only">Payment schedule for {purchase?.description ?? "card purchase"}</caption>
                       <thead>
                         <tr>
                           {[
@@ -287,16 +330,16 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
                       <tbody>
                         {items.map((item) => (
                           <tr key={item.id}>
-                            <td>
+                            <td data-label="Bill / due date">
                               {item.bill_date}
                               <br />
                               <small>Due {item.due_date}</small>
                             </td>
-                            <td>{item.report_month}</td>
-                            <td>{money(item.amount)}</td>
-                            <td>{money(item.paid)}</td>
-                            <td>{money(item.remaining)}</td>
-                            <td>
+                            <td data-label="Report month">{item.report_month}</td>
+                            <td data-label="Amount">{money(item.amount)}</td>
+                            <td data-label="Paid">{money(item.paid)}</td>
+                            <td data-label="Remaining">{money(item.remaining)}</td>
+                            <td className="plans-payment-action">
                               {Number(item.remaining) > 0 && (
                                 <button
                                   className="text-button"
@@ -337,80 +380,16 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
               );
             })}
           </section>
-          <section className="surface workflow-section">
-            <div className="section-heading">
-              <h2>Money coming back</h2>
-              <button
-                className="solid-button"
-                onClick={() => open({ kind: "receivable" })}
-              >
-                Assign a shared amount
-              </button>
-            </div>
+          </div>
+        </>
+      )}
+      {children}
+      {data && (
+        <>
+          <details ref={reconciliation} className="surface workflow-section plans-disclosure" id="reconcile">
+            <summary><span className="plans-section-title"><Wallet size={20} aria-hidden="true" /><span><h2>Match your balances</h2><small>Check an account against a statement or counted cash.</small></span></span><ChevronDown size={18} aria-hidden="true" /></summary>
             <p className="muted">
-              Assign the share owed by each person. Only recorded collections
-              increase cash; they remain separate from earned income.
-            </p>
-            {!data.receivable_balances.length && (
-              <p className="empty-copy">
-                No tracked repayments yet. A shared expense needs a personal
-                share before you assign the remainder.
-              </p>
-            )}
-            {data.receivable_balances.map((r) => (
-              <article className="workflow-item" key={r.id}>
-                <div className="section-heading">
-                  <div>
-                    <h3>{r.counterparty}</h3>
-                    <p className="muted">
-                      {
-                        data.transactions.find((t) => t.id === r.transaction_id)
-                          ?.description
-                      }
-                    </p>
-                  </div>
-                  <b>{money(r.outstanding)} outstanding</b>
-                </div>
-                <p className="muted">
-                  Assigned {money(r.amount)} · Collected {money(r.collected)}
-                </p>
-                <div className="workflow-actions">
-                  {Number(r.outstanding) > 0 && (
-                    <button
-                      className="solid-button"
-                      onClick={() => open({ kind: "collect", receivable: r })}
-                    >
-                      Record collection
-                    </button>
-                  )}
-                  {Number(r.collected) === 0 && (
-                    <button
-                      className="text-button"
-                      onClick={() =>
-                        open({
-                          kind: "confirm",
-                          operation: {
-                            action: "cancel_plan",
-                            plan_type: "receivable",
-                            id: r.id,
-                            expected_revision: r.revision,
-                          },
-                          message:
-                            "Remove this uncollected allocation? The original expense and its personal share stay recorded.",
-                        })
-                      }
-                    >
-                      Remove allocation
-                    </button>
-                  )}
-                </div>
-              </article>
-            ))}
-          </section>
-          <section className="surface workflow-section" id="reconcile">
-            <h2>Match your balances</h2>
-            <p className="muted">
-              Use a dated statement or counted wallet balance. A correction
+              Use a dated statement or counted cash balance. A correction
               changes the opening baseline and rebuilds the current balance from
               your ledger. It does not create income or spending.
             </p>
@@ -419,10 +398,6 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
                 ...data.accounts.map((a) => ({
                   ...a,
                   targetType: "account" as const,
-                })),
-                ...data.wallets.map((a) => ({
-                  ...a,
-                  targetType: "wallet" as const,
                 })),
               ].map((a) => (
                 <article className="workflow-item" key={a.id}>
@@ -433,8 +408,7 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
                   <p className="muted">
                     {a.opening_balance === null
                       ? "Opening balance needs reconciliation"
-                      : `Opening baseline ${money(a.opening_balance)}`}{" "}
-                    · Revision {a.revision}
+                      : `Opening baseline ${money(a.opening_balance)}`}
                   </p>
                   <button
                     className="text-button"
@@ -451,9 +425,11 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
                 </article>
               ))}
             </div>
+            {!data.accounts.length && <p className="empty-copy">Add an account to start checking balances.</p>}
             <details>
               <summary>Recent balance corrections</summary>
-              {data.balance_reconciliations
+              {!data.balance_reconciliations.length && <p className="muted">No balance corrections yet.</p>}
+              {[...data.balance_reconciliations]
                 .sort((a, b) => b.created_at.localeCompare(a.created_at))
                 .slice(0, 10)
                 .map((r) => (
@@ -464,46 +440,13 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
                   </p>
                 ))}
             </details>
-          </section>
-          <section className="surface workflow-section">
-            <h2>Recorded settlements</h2>
+          </details>
+          <details className="surface workflow-section plans-disclosure">
+            <summary><span className="plans-section-title"><History size={20} aria-hidden="true" /><span><h2>Settlement history</h2><small>{data.installment_payments.length} recorded payments</small></span></span><ChevronDown size={18} aria-hidden="true" /></summary>
             <p className="muted">
-              Correct a mistaken payment or collection here. Reversing restores
+              Correct a mistaken payment here. Reversing restores
               the outstanding amount and reverses its ledger movement together.
             </p>
-            {data.receivable_collections.map((c) => {
-              const r = data.receivable_balances.find(
-                (r) => r.id === c.receivable_id,
-              );
-              const t = data.transactions.find(
-                (t) => t.id === c.transaction_id,
-              );
-              return r && t ? (
-                <div className="settlement-row" key={c.id}>
-                  <span>
-                    {t.date} · {r.counterparty} · {money(t.amount)}
-                  </span>
-                  <button
-                    className="text-button"
-                    onClick={() =>
-                      open({
-                        kind: "confirm",
-                        operation: {
-                          action: "reverse_settlement",
-                          settlement_type: "collection",
-                          id: c.id,
-                          expected_revision: r.revision,
-                        },
-                        message:
-                          "Reverse this collection and restore the amount owed?",
-                      })
-                    }
-                  >
-                    Reverse collection
-                  </button>
-                </div>
-              ) : null;
-            })}
             {data.installment_payments.map((p) => {
               const item = data.installment_balances.find(
                 (i) => i.id === p.item_id,
@@ -511,9 +454,7 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
               const plan = data.installment_plans.find(
                 (l) => l.id === item?.plan_id,
               );
-              const t = data.transactions.find(
-                (t) => t.id === p.transaction_id,
-              );
+              const t = overview.transactions.get(p.transaction_id);
               return plan && t ? (
                 <div className="settlement-row" key={p.id}>
                   <span>
@@ -540,11 +481,11 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
                 </div>
               ) : null;
             })}
-            {!data.receivable_collections.length &&
-              !data.installment_payments.length && (
+            {!data.installment_payments.length && (
                 <p className="empty-copy">No settlements recorded yet.</p>
               )}
-          </section>
+          </details>
+          <p className="plans-footnote">Payments move money between balances. They aren’t counted as new spending or income.</p>
         </>
       )}
       <Dialog open={!!mode} onOpenChange={(v) => !v && !busy && setMode(null)}>
@@ -563,6 +504,7 @@ export function FinancePlans({ demo = false }: { demo?: boolean }) {
                         ? "Reconcile a balance"
                         : "Review this correction"}
             </DialogTitle>
+            <DialogDescription>Review the details before saving changes to your ledger.</DialogDescription>
           </DialogHeader>
           <form onSubmit={submit} className="workflow-form">
             {(mode?.kind === "installments" || mode?.kind === "receivable") && (

@@ -49,12 +49,12 @@ export function ProfileSettings({ profile, userEmail }: ProfileSettingsProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label>Email</Label>
-          <Input value={userEmail} disabled />
+          <Label htmlFor="profile-email">Email</Label>
+          <Input id="profile-email" value={userEmail} disabled />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="displayName">Display Name</Label>
+          <Label htmlFor="displayName">Display name</Label>
           <Input
             id="displayName"
             value={displayName}
@@ -64,7 +64,7 @@ export function ProfileSettings({ profile, userEmail }: ProfileSettingsProps) {
         </div>
 
         <Button onClick={handleSave} disabled={loading}>
-          {loading ? 'Saving...' : 'Save Changes'}
+          {loading ? 'Saving...' : 'Save changes'}
         </Button>
       </CardContent>
     </Card>

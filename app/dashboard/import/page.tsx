@@ -1,2 +1,2 @@
-import { ImportStudio } from '@/components/dashboard/import-studio'
-export default function Page(){return <ImportStudio/>}
+import { redirect } from 'next/navigation';
+export default function Page() { redirect('/dashboard'); }

@@ -1,3 +1,4 @@
+import { PageHeading } from "@/components/layout/page-heading";
 import { createClient } from '@/lib/supabase/server'
 import { formatCurrency } from '@/lib/constants'
 import { AccountList } from '@/components/accounts/account-list'
@@ -23,20 +24,16 @@ export default async function AccountsPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-6 md:space-y-8 px-4 md:px-0 py-6 md:py-0">
+      <div className="brand-page space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Accounts</h1>
-          <div className="flex items-center gap-2 mt-1">
+      <PageHeading title="Accounts" description={
+        <div className="flex items-center gap-2 mt-1">
             <Wallet className="h-4 w-4 text-muted-foreground" />
             <p className="text-muted-foreground">
               {activeAccounts.some(a=>a.opening_balance===null)?'Balance total:':'Ledger balance total:'} <span className="font-semibold text-foreground">{activeAccounts.some(a=>a.opening_balance===null) ? 'Unknown' : formatCurrency(totalBalance)}</span>
             </p>
           </div>
-        </div>
-        <AddAccountButton />
-      </div>
+      } action={<AddAccountButton />} />
 
       {/* Active Accounts */}
       <AccountList accounts={activeAccounts} />

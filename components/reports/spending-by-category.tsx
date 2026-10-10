@@ -3,7 +3,7 @@
 import { Transaction } from '@/types/database'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/constants'
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 
 interface SpendingByCategoryProps {
   transactions: Transaction[]
@@ -31,7 +31,7 @@ export function SpendingByCategory({ transactions }: SpendingByCategoryProps) {
       categoryTotals[categoryName] = {
         name: categoryName,
         amount: 0,
-        color: category?.color || '#94a3b8',
+        color: category?.color || 'var(--transfer)',
         icon: category?.icon || '💰',
       }
     }
@@ -47,7 +47,7 @@ export function SpendingByCategory({ transactions }: SpendingByCategoryProps) {
         <CardHeader>
           <CardTitle>Spending by Category</CardTitle>
         </CardHeader>
-        <CardContent className="text-center py-8 text-gray-500">
+        <CardContent className="text-center py-8 text-muted-foreground">
           No expenses this month
         </CardContent>
       </Card>
@@ -58,7 +58,7 @@ export function SpendingByCategory({ transactions }: SpendingByCategoryProps) {
     <Card>
       <CardHeader>
         <CardTitle>Spending by Category</CardTitle>
-        <p className="text-sm text-gray-500">This month</p>
+        <p className="text-sm text-muted-foreground">This month</p>
       </CardHeader>
       <CardContent>
         <div className="h-64">
@@ -79,6 +79,7 @@ export function SpendingByCategory({ transactions }: SpendingByCategoryProps) {
                 ))}
               </Pie>
               <Tooltip
+                contentStyle={{ background: "var(--popover)", borderColor: "var(--border)", color: "var(--foreground)", borderRadius: 12 }}
                 formatter={(value) => formatCurrency(Number(value))}
               />
             </PieChart>
@@ -98,7 +99,7 @@ export function SpendingByCategory({ transactions }: SpendingByCategoryProps) {
               </div>
               <div className="text-sm">
                 <span className="font-medium">{formatCurrency(category.amount)}</span>
-                <span className="text-gray-500 ml-2">
+                <span className="text-muted-foreground ml-2">
                   ({((category.amount / total) * 100).toFixed(0)}%)
                 </span>
               </div>

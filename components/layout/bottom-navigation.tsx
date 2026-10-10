@@ -2,7 +2,7 @@
 import { MonthlyLink as Link } from "@/components/dashboard/monthly-link";
 import {usePathname,useSearchParams,useRouter} from 'next/navigation'
 import {useEffect,useRef,useState} from 'react'
-import {Home,ArrowLeftRight,CalendarDays,Plus,X} from 'lucide-react'
+import {Home,ArrowLeftRight,CalendarDays,BarChart3,Settings,Plus,X} from 'lucide-react'
 import {Drawer,DrawerContent,DrawerHeader,DrawerTitle,DrawerDescription} from '@/components/ui/drawer'
 import {TransactionInspector} from '@/components/transactions/transaction-inspector'
 import {entrySchema,manilaToday,type LedgerEntry} from '@/lib/finance/core'
@@ -17,7 +17,13 @@ export function BottomNavigation({demo=false}:{demo?:boolean}){
  const [liveContext,setContext]=useState<Context|null>(null),[error,setError]=useState('');
  const context=demo?{accounts:[{id:'10000000-0000-4000-8000-000000000001',name:'Everyday account'}],categories:demoCategories}:liveContext;
  const month=search.get('month'),suffix=month?`month=${month}&`:'';
- const tabs=[{name:'Overview',href:`${base}?${suffix}view=overview`,icon:Home,active:pathname===base&&(!search.get('view')||search.get('view')==='overview')},{name:'Transactions',href:`${base}?${suffix}view=transactions`,icon:ArrowLeftRight,active:pathname===base&&search.get('view')==='transactions'},{name:'Plans',href:`${base}?${suffix}view=analysis`,icon:CalendarDays,active:pathname===base&&search.get('view')==='analysis'}];
+ const tabs=[
+  {name:'Overview',href:`${base}?${suffix}view=overview`,icon:Home,active:pathname===base&&(!search.get('view')||search.get('view')==='overview')},
+  {name:'Transactions',href:`${base}?${suffix}view=transactions`,icon:ArrowLeftRight,active:pathname===base&&search.get('view')==='transactions'},
+  {name:'Planning',href:`${base}?${suffix}view=analysis`,icon:CalendarDays,active:(pathname===base&&search.get('view')==='analysis')||['plans','budgets','recurring'].some(p=>pathname===`${base}/${p}`)},
+  {name:'Reports',href:demo?`${base}?${suffix}view=reflection`:`/dashboard/reports${month ? `?month=${month}` : ''}`,icon:BarChart3,active:pathname.endsWith('/reports')||(pathname===base&&search.get('view')==='reflection')},
+  ...(!demo?[{name:'Settings',href:'/dashboard/settings',icon:Settings,active:['/dashboard/settings','/dashboard/accounts'].includes(pathname)}]:[]),
+ ];
  useEffect(()=>{
   if(!open)return;
   let active=true;

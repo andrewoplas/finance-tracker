@@ -83,9 +83,9 @@ export function TransactionList({ transactions }: TransactionListProps) {
                     onDelete={() => handleDelete(transaction)}
                   >
                     <div
-                      className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors duration-200 group"
+                      className="legacy-transaction-row flex items-center justify-between gap-3 p-4 hover:bg-accent/50 transition-colors duration-200 group"
                     >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       {/* Category Icon with colored background */}
                       <div 
                         className={cn(
@@ -119,7 +119,7 @@ export function TransactionList({ transactions }: TransactionListProps) {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 shrink-0">
                       <div className="text-right">
                         <p
                           className={cn(
@@ -142,7 +142,8 @@ export function TransactionList({ transactions }: TransactionListProps) {
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            aria-label={`Manage ${transaction.description || 'transaction'}`}
+                            className="transaction-menu-button"
                           >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>

@@ -1,4 +1,6 @@
-import { PlannedItems } from "@/components/recurring/planned-items"
+import { PlannedItems } from '@/components/recurring/planned-items';
+import { PlanningTabs } from "@/components/layout/planning-tabs";
+import { PageHeading } from "@/components/layout/page-heading";
 import { createClient } from '@/lib/supabase/server'
 import { RecurringList } from '@/components/recurring/recurring-list'
 import { AddRecurringButton } from '@/components/recurring/add-recurring-button'
@@ -18,17 +20,12 @@ export default async function RecurringPage() {
     .order('next_date')
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Recurring Transactions</h1>
-          <p className="text-gray-500">Automate your regular income and expenses</p>
-        </div>
-        <AddRecurringButton />
-      </div>
+    <div className="brand-page space-y-6">
+      <PlanningTabs />
+      <PageHeading title="Recurring" description="Track repeating income and expenses. Post each occurrence when you’re ready." action={<AddRecurringButton />} />
 
-      <PlannedItems />
       <RecurringList recurring={recurring || []} />
+      <PlannedItems />
     </div>
   )
 }

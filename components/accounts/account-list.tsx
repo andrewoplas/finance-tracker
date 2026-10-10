@@ -62,7 +62,7 @@ export function AccountList({ accounts, isArchived = false }: AccountListProps) 
 
   if (accounts.length === 0) {
     return (
-      <Card className="border-dashed border-2">
+      <Card className="border-dashed">
         <CardContent className="py-16 text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
             <Sparkles className="h-8 w-8 text-primary" />
@@ -90,7 +90,7 @@ export function AccountList({ accounts, isArchived = false }: AccountListProps) 
             <Card 
               key={account.id} 
               className={cn(
-                "group overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5",
+                "group overflow-hidden transition-colors duration-200",
                 isArchived && "opacity-60 hover:opacity-80"
               )}
             >
@@ -110,7 +110,8 @@ export function AccountList({ accounts, isArchived = false }: AccountListProps) 
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        aria-label={`Manage ${account.name}`}
+                        className="account-menu-button"
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>

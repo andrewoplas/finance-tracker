@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   MonthlyOverview,
@@ -21,6 +22,7 @@ export default async function DashboardPage({
   const month = monthOnly.safeParse(query.month).success
     ? query.month!
     : manilaToday().slice(0, 7);
+  if (query.view === "reflection") redirect(`/dashboard/reports?month=${month}`);
   const data: OverviewData = {
     entries: [],
     categories: [],
@@ -40,7 +42,6 @@ export default async function DashboardPage({
       budgets,
       commitments,
       accounts,
-      retro,
       reporting,
       installments,
       tags,
@@ -54,9 +55,8 @@ export default async function DashboardPage({
         .limit(1001),
       db
         .from("categories")
-        .select("id,name")
-        .eq("user_id", user.id)
-        .eq("type", "expense"),
+        .select("id,name,type")
+        .eq("user_id", user.id),
       db
         .from("budgets")
         .select("*")
@@ -71,12 +71,6 @@ export default async function DashboardPage({
         .order("next_date")
         .limit(4),
       db.from("accounts").select("id,name").eq("user_id", user.id),
-      db
-        .from("retro_plans")
-        .select("notes")
-        .eq("user_id", user.id)
-        .eq("month", month)
-        .maybeSingle(),
       db
         .from("finance_report_rows")
         .select("entry")
@@ -127,7 +121,8 @@ export default async function DashboardPage({
       id: t.id,
       revision: t.revision,
     })) as LedgerEntry[];
-    data.categories = categories.data.map((c) => ({
+    data.transactionCategories = categories.data;
+    data.categories = categories.data.filter(c => c.type === "expense").map((c) => ({
       ...c,
       amount: decimal(
         budgets.data
@@ -159,10 +154,9 @@ export default async function DashboardPage({
     ]
       .sort((a, b) => a.next_date.localeCompare(b.next_date))
       .slice(0, 4);
-    data.retro = retro.data?.notes;
-    if (commitments.error || retro.error || installments.error)
+    if (commitments.error || installments.error)
       data.partial =
-        "Spending loaded. Commitments or saved reflection could not load; those sections may be incomplete.";
+        "Spending loaded. Commitments could not load; those sections may be incomplete.";
     if (!data.tagsAvailable) data.partial = [data.partial, "Tags could not load. Please try again shortly."].filter(Boolean).join(" ");
   } catch (error) {
     data.error =

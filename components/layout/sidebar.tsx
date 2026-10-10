@@ -1,12 +1,14 @@
 'use client'
 
+import { BrandLogo } from "./brand-logo";
+
 import { MonthlyLink as Link } from "@/components/dashboard/monthly-link";
 import { usePathname, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
   ArrowLeftRight,
-  Wallet,
+  BarChart3,
   Target,
   Settings,
   LogOut,
@@ -17,39 +19,34 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/dashboard?view=transactions', label: 'Transactions', icon: ArrowLeftRight },
-  { href: '/dashboard/budgets', label: 'Budgets', icon: Target },
-  { href: '/dashboard/accounts', label: 'Accounts', icon: Wallet },
-]
-const tools = [
-  { href: '/dashboard/inbox', label: 'SMS inbox' },
-  { href: '/dashboard/plans', label: 'Plans & shared money' },
-  { href: '/dashboard/import', label: 'Import CSV' },
-  { href: '/dashboard?view=reflection', label: 'Monthly reflection' },
-  { href: '/dashboard/reports', label: 'Reports' },
-  { href: '/dashboard/recurring', label: 'Recurring' },
-  { href: '/dashboard/wallets', label: 'Wallets' },
-  { href: '/dashboard/transactions', label: 'Manual entry' },
-]
-
-const bottomNavItems = [
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
-]
+  { href: '/dashboard?view=analysis', label: 'Planning', icon: Target },
+  { href: '/dashboard/reports', label: 'Reports', icon: BarChart3 },
+];
+const bottomNavItems = [{ href: '/dashboard/settings', label: 'Settings', icon: Settings }];
 
 function NavContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname = usePathname()
   const search = useSearchParams()
   const monthlyHref = (href: string) => {
-    if (pathname !== '/dashboard' || !search.get('month') || href.split('?')[0] !== '/dashboard') return href;
+    if (!search.get('month') || !['/dashboard', '/dashboard/reports'].includes(href.split('?')[0])) return href;
     const [path, query] = href.split('?');
     const params = new URLSearchParams(query);
     params.set('month', search.get('month')!);
     return `${path}?${params}`;
   }
+  const isCurrent = (href: string) => {
+    const [path, query] = href.split('?');
+    if (href === '/dashboard?view=analysis' && ['/dashboard/plans','/dashboard/budgets','/dashboard/recurring'].includes(pathname)) return true;
+    if (href === '/dashboard/settings' && pathname === '/dashboard/accounts') return true;
+    if (href === '/dashboard/reports' && pathname === '/dashboard' && search.get('view') === 'reflection') return true;
+    if (pathname !== path) return false;
+    return path !== '/dashboard' || (search.get('view') || 'overview') === (new URLSearchParams(query).get('view') || 'overview');
+  };
   const router = useRouter()
   const supabase = createClient()
 
@@ -59,16 +56,17 @@ function NavContent({ onItemClick }: { onItemClick?: () => void }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="finance-nav flex flex-col h-full min-h-0">
       {/* Main Navigation */}
-      <nav className="flex-1 px-3 py-4">
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
         <div className="space-y-1">
           {navItems.map((item) => {
-            const isActive = (search.get('view') ? `${pathname}?view=${search.get('view')}` : pathname) === item.href
+            const isActive = isCurrent(item.href)
             return (
               <Link
                 key={item.href}
                 href={monthlyHref(item.href)}
+                aria-current={isActive ? 'page' : undefined}
                 onClick={onItemClick}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm group',
@@ -91,16 +89,13 @@ function NavContent({ onItemClick }: { onItemClick?: () => void }) {
             )
           })}
         </div>
-        <details className="mt-7 px-3 text-sm text-muted-foreground" open={tools.some(t => t.href === pathname)}>
-          <summary className="cursor-pointer py-2">Tools</summary>
-          {tools.map(item => <Link className="block py-2.5" key={item.href} href={monthlyHref(item.href)} onClick={onItemClick}>{item.label}</Link>)}
-        </details>
+
       </nav>
 
       {/* Bottom Section */}
       <div className="px-3 py-4 border-t border-border/50">
         {bottomNavItems.map((item) => {
-          const isActive = (search.get('view') ? `${pathname}?view=${search.get('view')}` : pathname) === item.href
+          const isActive = isCurrent(item.href)
           return (
             <Link
               key={item.href}
@@ -140,7 +135,7 @@ function NavContent({ onItemClick }: { onItemClick?: () => void }) {
   )
 }
 
-function Logo() { return <div className="text-xl font-semibold tracking-tight">Finance</div> }
+function Logo() { return <BrandLogo /> }
 
 export function Sidebar() {
   const [open, setOpen] = useState(false)
@@ -157,6 +152,8 @@ export function Sidebar() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-72 p-0 border-r-0">
+            <SheetTitle className="sr-only">Main navigation</SheetTitle>
+            <SheetDescription className="sr-only">Navigate your Finance workspace.</SheetDescription>
             <div className="p-5 border-b border-border/50">
               <Logo />
             </div>
@@ -166,7 +163,7 @@ export function Sidebar() {
       </header>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-56 bg-sidebar border-r border-sidebar-border h-screen flex-col fixed left-0 top-0">
+      <aside className="hidden lg:flex w-56 bg-sidebar border-r border-sidebar-border h-dvh flex-col fixed left-0 top-0">
         <div className="p-5 border-b border-sidebar-border/50">
           <Logo />
         </div>

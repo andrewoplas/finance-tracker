@@ -23,11 +23,8 @@ export default async function DemoPage({
         <nav aria-label="Main navigation">
           <Link className={!query.view || query.view === "overview" ? "active" : ""} href={`/demo?month=${month}`}><LayoutDashboard size={18}/> Overview</Link>
           <Link className={query.view === "transactions" ? "active" : ""} href={`/demo?month=${month}&view=transactions`}><ArrowLeftRight size={18}/> Transactions</Link>
-          <Link className={query.view === "analysis" ? "active" : ""} href={`/demo?month=${month}&view=analysis`}><CalendarDays size={18}/> Spending plan</Link>
-          <div className="nav-secondary-label">Tools</div>
-          <Link href="/demo/plans">Plans & shared money</Link>
-          <Link href="/demo/import">Import CSV</Link>
-          <Link href={`/demo?month=${month}&view=reflection`}>Monthly reflection</Link>
+          <Link className={query.view === "analysis" ? "active" : ""} href={`/demo?month=${month}&view=analysis`}><CalendarDays size={18}/> Planning</Link>
+          <Link href={`/demo?month=${month}&view=reflection`}>Reports & reflection</Link>
         </nav>
         <div className="sidebar-note"><small>Synthetic preview<br/>No account connected</small><Link href="/login">Sign in</Link></div>
       </aside>

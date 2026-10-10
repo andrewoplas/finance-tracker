@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { PlanningTabs } from "@/components/layout/planning-tabs";
+import { TransactionTools } from "@/components/transactions/transaction-tools";
 import { MonthlyLink } from "./monthly-link";
 import {PeriodPicker} from "./period-picker";
 import {activityDateLabel} from "@/lib/finance/date-label";
@@ -30,6 +32,7 @@ export type OverviewData = {
   entries: LedgerEntry[];
   reportEntries?: LedgerEntry[];
   categories: { id: string; name: string; amount: string }[];
+  transactionCategories?: { id: string; name: string; type?: string }[];
   commitments: {
     id: string;
     description: string;
@@ -78,6 +81,11 @@ export function MonthlyOverview({
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [notes, setNotes] = useState(data.retro ?? "");
+  const [searchText, setSearchText] = useState("");
+  const [accountFilter, setAccountFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [filter, setFilter] = useState(initialFilter);
   useEffect(() => { setFilter(search.get("filter") ?? "all"); }, [search]);
   useEffect(() => { setEntries(data.entries); }, [data.entries]);
@@ -144,7 +152,28 @@ export function MonthlyOverview({
       .reduce((n, t) => n + minor(t.amount), 0),
   );
   const max = Math.max(budget, report.spending, 1);
-  const visible = entries.filter(t => filter === "all" || (filter === "pending" ? t.review_status === "pending" : filter.startsWith("tag:") ? (t.tag_ids ?? []).includes(filter.slice(4)) : t.category_id === filter)).sort((a,b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+  const transactionCategories = data.transactionCategories ?? data.categories;
+  const accountNames = new Map(data.accounts.map(a => [a.id, a.name]));
+  const categoryNames = new Map(transactionCategories.map(c => [c.id, c.name]));
+  const searchNeedle = searchText.trim().toLowerCase();
+  const visible = entries.filter(t =>
+    (!searchNeedle || `${t.description} ${t.amount} ${accountNames.get(t.account_id) ?? ""} ${categoryNames.get(t.category_id ?? "") ?? ""}`.toLowerCase().includes(searchNeedle)) &&
+    (!accountFilter || t.account_id === accountFilter) && (!typeFilter || t.type === typeFilter) &&
+    (!dateFrom || t.date >= dateFrom) && (!dateTo || t.date <= dateTo) &&
+    (filter === "all" || (filter === "pending" ? t.review_status === "pending" : filter.startsWith("tag:") ? (t.tag_ids ?? []).includes(filter.slice(4)) : t.category_id === filter))
+  ).sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+  const filteredTotals = visible.reduce((totals, t) => {
+    if (t.type === 'income') totals.income += minor(t.amount);
+    if (t.type === 'expense') totals.expense += minor(t.amount);
+    return totals;
+  }, { income: 0, expense: 0 });
+  function exportTransactions() {
+    const quote = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const rows = [['Date', 'Type', 'Amount', 'Category', 'Account', 'Description'], ...visible.map(t => [t.date, t.type, t.amount, categoryNames.get(t.category_id ?? '') ?? '', accountNames.get(t.account_id) ?? '', t.description])];
+    const url = URL.createObjectURL(new Blob([rows.map(row => row.map(quote).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url; link.download = `transactions-${month}.csv`; link.click(); URL.revokeObjectURL(url);
+  }
   const shown = view === "overview" ? visible.slice(0, 5) : visible;
   const days = [...new Set(shown.map(t => t.date))];
   const route = (nextView: string, nextFilter = "all") => `${base}?month=${month}&view=${nextView}&filter=${nextFilter}`;
@@ -161,15 +190,11 @@ export function MonthlyOverview({
         </div>
       )}
       <header className="overview-header">
-        <h1>{view === "transactions" ? "Transactions" : view === "analysis" ? "Spending plan" : view === "reflection" ? "Monthly reflection" : "Overview"}</h1>
+        <h1>{view === "transactions" ? "Transactions" : view === "analysis" ? "Planning" : view === "reflection" ? "Monthly reflection" : "Overview"}</h1>
         <PeriodPicker month={month} />
       </header>
-      <nav className="workspace-tabs" aria-label="Monthly views">
-        <MonthlyLink loadedMonth={month} aria-current={view === "overview" ? "page" : undefined} href={route("overview")}>Overview</MonthlyLink>
-        <MonthlyLink loadedMonth={month} aria-current={view === "transactions" ? "page" : undefined} href={route("transactions")}>Transactions</MonthlyLink>
-        <MonthlyLink loadedMonth={month} aria-current={view === "analysis" ? "page" : undefined} href={route("analysis")}>Spending plan</MonthlyLink>
-        <details><summary>More</summary><div className="more-menu"><Link href={`${base}/plans`}>Plans & shared money</Link><Link href={`${base}/import`}>Import CSV</Link><MonthlyLink loadedMonth={month} href={route("reflection")}>Monthly reflection</MonthlyLink></div></details>
-      </nav>
+      {view === "analysis" && <PlanningTabs demo={demo} />}
+      {view === "transactions" && !demo && <TransactionTools entries={entries} accounts={data.accounts} categories={transactionCategories} />}
       {notice && (
         <div role="status" className="notice">
           {notice}
@@ -285,11 +310,11 @@ export function MonthlyOverview({
                         <i
                           style={{
                             background: [
-                              "#39755c",
-                              "#a1b8a5",
-                              "#cda777",
-                              "#829ba3",
-                              "#aea0b7",
+                              "var(--chart-2)",
+                              "var(--chart-4)",
+                              "var(--warning)",
+                              "var(--chart-3)",
+                              "var(--chart-1)",
                             ][i % 5],
                           }}
                         />
@@ -310,7 +335,7 @@ export function MonthlyOverview({
                           width: `${minor(c.amount) ? Math.min(100, (c.spent / minor(c.amount)) * 100) : 0}%`,
                           background:
                             c.spent > minor(c.amount) && minor(c.amount) > 0
-                              ? "#b57555"
+                              ? "var(--expense)"
                               : undefined,
                         }}
                       />
@@ -353,19 +378,10 @@ export function MonthlyOverview({
               )}
               {(
                 <Link className="text-button" href={`${base}/plans?month=${month}`}>
-                  Manage installments & repayments <ArrowRight size={14} />
+                  Manage installments <ArrowRight size={14} />
                 </Link>
               )}
-              <div className="receivable">
-                <span>
-                  Shared & reimbursable share <CircleHelp size={14} />
-                </span>
-                <b>{report.attribution_status === "unreviewed" ? "Needs review" : money(report.recoverable)}</b>
-                <small>
-                  Allocated to others. Collection is tracked in Plans and is not
-                  available cash.
-                </small>
-              </div>
+
             </section>
           </div>}
           {(view === "overview" || view === "transactions") && <section className="surface activity-panel" id="activity">
@@ -381,13 +397,23 @@ export function MonthlyOverview({
                 <option value="all">All activity</option>
                 <option value="pending">Needs review</option>
                 {(data.tags ?? []).map(tag => <option key={tag.id} value={`tag:${tag.id}`}>Tag · {tag.name}</option>)}
-                {data.categories.map((c) => (
+                {transactionCategories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
               </select>}
             </div>
+            {view === "transactions" && <div className="transaction-filter-grid">
+              <input aria-label="Search transactions" placeholder="Search transactions" value={searchText} onChange={e=>setSearchText(e.target.value)} />
+              <select aria-label="Account" value={accountFilter} onChange={e=>setAccountFilter(e.target.value)}><option value="">All accounts</option>{data.accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select>
+              <select aria-label="Transaction type" value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}><option value="">All types</option>{["expense","income","transfer"].map(t=><option key={t} value={t}>{t}</option>)}</select>
+              <input aria-label="From date" type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} />
+              <input aria-label="To date" type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} />
+              <button className="text-button" onClick={()=>{setSearchText("");setAccountFilter("");setTypeFilter("");setDateFrom("");setDateTo("");setFilter("all");}}>Clear filters</button>
+              <p className="muted">{visible.length} transactions · Income {money(filteredTotals.income)} · Expenses {money(filteredTotals.expense)} · Net {money(filteredTotals.income - filteredTotals.expense)}</p>
+              <button className="text-button" onClick={exportTransactions} disabled={!visible.length}>Export CSV</button>
+            </div>}
             {days.map(date => <div className="transaction-day" key={date}><h3>{activityDateLabel(date)}</h3><div className="transaction-group">{shown.filter(t => t.date === date).map(t => (
                 <button
                   className="activity-row"
@@ -407,14 +433,14 @@ export function MonthlyOverview({
                     <b>{t.description}</b>
                     {!!t.tag_ids?.length && <span className="transaction-tags">{t.tag_ids.map(id => <span key={id}>#{data.tags?.find(tag=>tag.id===id)?.name ?? "Tag"}</span>)}</span>}
                     <small>
-                      {data.categories.find(c=>c.id===t.category_id)?.name ?? (t.type==="transfer"?"Transfer":"Uncategorized")} · {data.accounts.find((a) => a.id === t.account_id)?.name ??
+                      {transactionCategories.find(c=>c.id===t.category_id)?.name ?? (t.type==="transfer"?"Transfer":"Uncategorized")} · {data.accounts.find((a) => a.id === t.account_id)?.name ??
                         "Account"}
                     </small>
                   </span>
                   <span className="activity-category">
                     {t.type === "transfer"
                       ? "Transfer · excluded from spending"
-                      : (data.categories.find((c) => c.id === t.category_id)
+                      : (transactionCategories.find((c) => c.id === t.category_id)
                           ?.name ?? "Uncategorized")}
                   </span>
                   {t.review_status === "pending" && (
@@ -427,13 +453,7 @@ export function MonthlyOverview({
                   <ChevronRight size={15} />
                 </button>
               ))}</div></div>)}
-            {!entries.some(
-              (t) =>
-                filter === "all" ||
-                (filter === "pending"
-                  ? t.review_status === "pending"
-                  : filter.startsWith("tag:") ? (t.tag_ids ?? []).includes(filter.slice(4)) : t.category_id === filter),
-            ) && <p className="empty-copy">No transactions in this view.</p>}
+            {!shown.length && <p className="empty-copy">No transactions in this view.</p>}
           </section>}
           {view === "reflection" && <section className="surface reflection">
             <div>
@@ -480,7 +500,7 @@ export function MonthlyOverview({
               key={selected.id}
               entry={selected}
               onCancel={() => setSelected(null)}
-              categories={data.categories}
+              categories={transactionCategories}
               tags={data.tags ?? []}
               tagsAvailable={data.tagsAvailable ?? demo}
               demo={demo}

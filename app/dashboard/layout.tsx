@@ -9,12 +9,12 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="finance-app flex min-h-screen bg-background">
       {/* Desktop: Sidebar */}
       <Sidebar />
       
       {/* Main Content */}
-      <main className="flex-1 overflow-auto pb-20 lg:pb-0 md:p-5 lg:p-8 mt-16 lg:mt-0">
+      <main className="finance-main min-w-0 flex-1 overflow-auto pb-20 lg:pb-0 md:p-5 lg:p-8 mt-16 lg:mt-0">
         <div className="max-w-7xl mx-auto">
           {children}
         </div>

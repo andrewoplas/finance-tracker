@@ -1,3 +1,6 @@
+import { MonthlyReflection } from "@/components/reports/monthly-reflection";
+import { monthOnly } from "@/lib/finance/core";
+import { PageHeading } from "@/components/layout/page-heading";
 import { createClient } from "@/lib/supabase/server";
 import {
   manilaToday,
@@ -9,8 +12,9 @@ const money = (minor: number) =>
   new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(
     minor / 100,
   );
-export default async function ReportsPage() {
-  const month = manilaToday().slice(0, 7);
+export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
+  const query = await searchParams;
+  const month = monthOnly.safeParse(query.month).success ? query.month! : manilaToday().slice(0, 7);
   const months = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(`${month}-01T00:00:00Z`);
     d.setUTCMonth(d.getUTCMonth() - i);
@@ -20,13 +24,16 @@ export default async function ReportsPage() {
   const {
     data: { user },
   } = await db.auth.getUser();
-  const { data, error } = await db
+  const [{ data, error }, reflection] = await Promise.all([
+    db
     .from("finance_report_rows")
-    .select("*")
+    .select("entry")
     .eq("user_id", user?.id)
     .gte("report_month", months[5])
     .lte("report_month", month)
-    .limit(1001);
+    .limit(1001),
+    db.from('retro_plans').select('notes').eq('user_id', user?.id).eq('month', month).maybeSingle(),
+  ]);
   if (error || !user || !data || data.length > 1000)
     return (
       <div className="surface" role="alert">
@@ -48,16 +55,14 @@ export default async function ReportsPage() {
       personal_amount: String(t.personal_amount),
     })) as LedgerEntry[];
   return (
-    <div className="overview">
-      <header className="overview-header">
-        <div>
-          <div className="eyebrow">YOUR MONTHLY STORY</div>
-          <h1>Look back. Plan ahead.</h1>
-          <p>Deterministic totals by report month · PHP · Asia/Manila</p>
-        </div>
-      </header>
-      <div className="surface" style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", fontSize: 13, textAlign: "left" }}>
+    <div className="brand-page">
+      <PageHeading title="Reports" description="Compare monthly totals and revisit your reflections." />
+      <form className="report-month-picker" method="GET"><label className="workflow-field">Report month<input type="month" name="month" defaultValue={month} required /></label><button className="solid-button">View month</button></form>
+      <MonthlyReflection key={month} month={month} notes={reflection.data?.notes ?? ''} unavailable={!!reflection.error} />
+      <div className="surface report-surface">
+        <div className="report-table-wrap" role="region" aria-label="Six-month finance report" tabIndex={0}>
+        <table className="report-table">
+          <caption className="sr-only">Monthly report totals in Philippine pesos</caption>
           <thead>
             <tr>
               {[
@@ -69,7 +74,7 @@ export default async function ReportsPage() {
                 "Allocated to others",
                 "Net report amount*",
               ].map((h) => (
-                <th key={h} style={{ padding: 14 }}>
+                <th key={h} scope="col">
                   {h}
                 </th>
               ))}
@@ -79,8 +84,8 @@ export default async function ReportsPage() {
             {months.map((month) => {
               const r = monthlyReport(entries, month);
               return (
-                <tr key={month} style={{ borderTop: "1px solid #e1e5dd" }}>
-                  <td style={{ padding: 14 }}>
+                <tr key={month}>
+                  <td>
                     <Link
                       className="text-button"
                       href={`/dashboard?month=${month}`}
@@ -103,6 +108,7 @@ export default async function ReportsPage() {
             })}
           </tbody>
         </table>
+        </div>
         <p className="muted">
           *Income plus collected reimbursements minus spending on report-month
           basis; this is not a bank balance or a paid-date cashflow statement.

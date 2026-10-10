@@ -4,6 +4,18 @@ Verified 2026-10-11 (Asia/Manila).
 
 Publishing update (2026-10-11): following Drew's request to commit and push, local `main` incorporated GitHub commit `1914928` through a history-preserving merge. Its ChatGPT Actions implementation and learned-default instructions are now in the checkout. The consolidation findings and verification below describe the earlier `ccf454b` snapshot; they do not certify the merged code. Cash-default commit `b7b8cc7` remains unrecovered, and remote MCP activation and pending expenses remain unconfirmed. No migrations or explicit deployment actions were performed.
 
+## Current simplification update — 2026-10-11
+
+The approved implementation consolidates navigation into Overview, Transactions, Planning, Reports and Settings, and aligns shared page controls with `docs/BRAND-DESIGN.md`. Transactions includes entry, filtering, totals, CSV export, quick-log suggestions from the selected month and expandable incoming reviews. Planning retains spending plans, budgets, installments, recurring items and planned reminders. Accounts are under Settings. Shared-money UI, wallets, standalone Inbox and CSV import are hidden; stored data and backend contracts are preserved.
+
+Reports supports selecting and editing previous monthly reflections. New `GET`/`PUT /api/v1/reflections/YYYY-MM` endpoints use the existing `retro_plans` table. Dots authentication is a dedicated project-level reflection key with a fixed owner and server-only service-role access, explicitly approved by Drew. See `docs/REFLECTION-ENDPOINT-SPEC.md`. The three server environment values are documented in `.env.example`; their live configuration and deployment are not verified. No migration or explicit deployment was performed for this change.
+
+Local verification: 18 focused tests passed; production build and TypeScript passed; ESLint reported zero errors and five inherited warnings. No live reflection persistence is claimed.
+
+Next steps: configure the dedicated reflection key, owner UUID and service-role key in the hosting project's server environment; verify Dots read/write against a deliberately chosen reflection month after deployment; complete desktop/mobile light/dark visual acceptance using a connected authenticated Browser session. The requested Browser plugin currently exposes no browser sessions, so source/build checks do not establish visual acceptance. Existing expense/MCP activation evidence below is historical and must be verified separately.
+
+The following consolidation notes are retained as historical evidence, not a description of the current Git tip.
+
 ## Workspace consolidation
 
 Canonical workspace: `/Users/drew/Documents/vibe-coding/finance-tracker`.

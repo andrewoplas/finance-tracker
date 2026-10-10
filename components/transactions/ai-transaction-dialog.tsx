@@ -231,7 +231,7 @@ export function AiTransactionDialog({
   return (
     <ResponsiveDialog open={open} onOpenChange={setOpen}>
       <ResponsiveDialogTrigger asChild>
-        <Button className="gap-2 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300">
+        <Button className="gap-2 ">
           <Wand2 className="h-4 w-4" />
           <span className="hidden sm:inline">Smart Add</span>
           <span className="sm:hidden">Add</span>
@@ -287,7 +287,7 @@ export function AiTransactionDialog({
 
             <Button 
               onClick={parseInput} 
-              className="w-full h-12 rounded-xl font-semibold shadow-lg shadow-primary/25"
+              className="w-full h-12 rounded-xl font-semibold "
               disabled={!inputText.trim()}
             >
               <Sparkles className="h-4 w-4 mr-2" />
@@ -325,7 +325,7 @@ export function AiTransactionDialog({
           <div className="space-y-4 pt-2">
             {/* Confidence indicator */}
             {currentTransaction.confidence < 0.8 && (
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-yellow-500/10 text-yellow-700 text-sm">
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-warning/10 text-warning-foreground text-sm">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>Please verify - AI is {Math.round(currentTransaction.confidence * 100)}% confident</span>
               </div>
@@ -473,7 +473,7 @@ export function AiTransactionDialog({
                   Back
                 </Button>
               )}
-              <Button onClick={goNext} className="flex-1 h-11 rounded-xl font-semibold shadow-lg shadow-primary/25">
+              <Button onClick={goNext} className="flex-1 h-11 rounded-xl font-semibold ">
                 {isLastTransaction ? (
                   transactions.length > 1 ? 'Review All' : 'Save'
                 ) : 'Next'}
@@ -553,7 +553,7 @@ export function AiTransactionDialog({
               </Button>
               <Button 
                 onClick={saveAllTransactions} 
-                className="flex-1 h-11 rounded-xl font-semibold shadow-lg shadow-primary/25"
+                className="flex-1 h-11 rounded-xl font-semibold "
               >
                 <Check className="h-4 w-4 mr-2" />
                 Save {transactions.length > 1 ? `All (${transactions.length})` : ''}

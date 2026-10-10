@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
@@ -98,19 +99,20 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4" />
                 Add
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add Category</DialogTitle>
+                <DialogTitle>Add category</DialogTitle>
+                <DialogDescription>Choose a name, type, and icon for this category.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAdd} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Type</Label>
+                  <Label htmlFor="category-type">Type</Label>
                   <Select value={type} onValueChange={(v) => setType(v as CategoryType)}>
-                    <SelectTrigger>
+                    <SelectTrigger id="category-type">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -143,7 +145,7 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Adding...' : 'Add Category'}
+                  {loading ? 'Adding...' : 'Add category'}
                 </Button>
               </form>
             </DialogContent>
@@ -152,7 +154,7 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Expense Categories</h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">Expense Categories</h3>
           <div className="flex flex-wrap gap-2">
             {expenseCategories.map((category) => (
               <Badge
@@ -162,21 +164,22 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
               >
                 {category.icon} {category.name}
                 <button
+                  aria-label={`Delete ${category.name}`}
                   onClick={() => handleDelete(category)}
-                  className="ml-1 hover:text-red-500"
+                  className="category-delete hover:text-destructive"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
               </Badge>
             ))}
             {expenseCategories.length === 0 && (
-              <p className="text-sm text-gray-400">No expense categories</p>
+              <p className="text-sm text-muted-foreground">No expense categories</p>
             )}
           </div>
         </div>
 
         <div>
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Income Categories</h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">Income Categories</h3>
           <div className="flex flex-wrap gap-2">
             {incomeCategories.map((category) => (
               <Badge
@@ -186,15 +189,16 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
               >
                 {category.icon} {category.name}
                 <button
+                  aria-label={`Delete ${category.name}`}
                   onClick={() => handleDelete(category)}
-                  className="ml-1 hover:text-red-500"
+                  className="category-delete hover:text-destructive"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
               </Badge>
             ))}
             {incomeCategories.length === 0 && (
-              <p className="text-sm text-gray-400">No income categories</p>
+              <p className="text-sm text-muted-foreground">No income categories</p>
             )}
           </div>
         </div>

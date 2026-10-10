@@ -26,9 +26,10 @@ interface FrequentTransaction {
 
 interface QuickActionsProps {
   frequentTransactions: FrequentTransaction[]
+  historyLabel?: string
 }
 
-export function QuickActions({ frequentTransactions }: QuickActionsProps) {
+export function QuickActions({ frequentTransactions, historyLabel = 'Based on your last 60 days of transactions' }: QuickActionsProps) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
 
@@ -37,7 +38,7 @@ export function QuickActions({ frequentTransactions }: QuickActionsProps) {
   }
 
   const handleQuickLog = async (tx: FrequentTransaction) => {
-    const key = `${tx.description}_${tx.amount}`
+    const key = JSON.stringify([tx.description, tx.amount, tx.type, tx.category_id, tx.account_id])
     setLoading(key)
 
     try {
@@ -90,7 +91,7 @@ export function QuickActions({ frequentTransactions }: QuickActionsProps) {
 
       <div className="flex flex-wrap gap-2">
         {frequentTransactions.map((tx, index) => {
-          const key = `${tx.description}_${tx.amount}`
+          const key = JSON.stringify([tx.description, tx.amount, tx.type, tx.category_id, tx.account_id])
           const isLoading = loading === key
           const sign = tx.type === 'income' ? '+' : '-'
           const colorClass = tx.type === 'income' ? 'text-income' : 'text-expense'
@@ -148,7 +149,7 @@ export function QuickActions({ frequentTransactions }: QuickActionsProps) {
       {/* Helper text */}
       <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
         <span>💡</span>
-        <span>Based on your last 60 days of transactions</span>
+        <span>{historyLabel}</span>
       </p>
     </motion.div>
   )

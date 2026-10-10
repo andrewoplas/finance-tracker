@@ -161,10 +161,7 @@ export function ImportStudio({ demo = false }: { demo?: boolean }) {
     </select>
   );
   return (
-    <div className="overview workflow-page">
-      <Link className="text-button" href={demo ? "/demo" : "/dashboard"}>
-        ← Back to overview
-      </Link>
+    <div className="overview workflow-page import-page">
       <header className="overview-header">
         <div>
           <h1>Import CSV</h1>
@@ -172,6 +169,7 @@ export function ImportStudio({ demo = false }: { demo?: boolean }) {
             Map your export, review each row, and match the closing statement.
           </p>
         </div>
+        <Link className="text-button" href={demo ? "/demo" : "/dashboard"}>← Overview</Link>
       </header>
       {demo && (
         <div className="demo-banner">
@@ -205,7 +203,7 @@ export function ImportStudio({ demo = false }: { demo?: boolean }) {
             maxLength={200}
           />
         </label>
-        <label className="text-button">
+        <label className="csv-upload">
           Choose CSV
           <input
             type="file"

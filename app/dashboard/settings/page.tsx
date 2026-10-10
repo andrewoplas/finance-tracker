@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { PageHeading } from "@/components/layout/page-heading";
 import { QuickLogWorkspace } from '@/components/sms/quick-log-workspace';
 import { SmsWorkspace } from "@/components/sms/sms-workspace"
 import { TagManager } from "@/components/settings/tag-manager"
@@ -26,11 +28,12 @@ export default async function SettingsPage() {
   const tags = await supabase.from("tags").select("id,name").eq("user_id", user?.id).order("name").limit(501)
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <h1 className="text-2xl font-bold">Settings</h1>
+    <div className="brand-page settings-page space-y-6">
+      <PageHeading title="Settings" description="Make Finance work for you. Manage your profile, preferences, and connections." />
 
       <section className="surface"><h2>Appearance</h2><p className="muted">Choose a theme or follow your device. Saved on this browser.</p><ThemePicker /></section>
 
+      <section className="surface"><h2>Accounts</h2><p className="muted">Manage your bank, cash, and card balances.</p><Link className="text-button" href="/dashboard/accounts">Manage accounts →</Link></section>
       <ProfileSettings profile={profile} userEmail={user?.email || ''} />
 
       <section id="transaction-api" className="surface"><SmsWorkspace setup /><QuickLogWorkspace setup /></section>

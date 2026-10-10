@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { Sparkles, Loader2, Mail, Lock, User } from 'lucide-react'
+import { Loader2, Mail, Lock, User } from 'lucide-react'
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
@@ -45,20 +45,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      {/* Decorative background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-      </div>
-      
-      <Card className="w-full max-w-md relative shadow-xl border-0 bg-card/80 backdrop-blur-sm">
-        <CardHeader className="text-center pb-2 pt-8">
-          <div className="mx-auto mb-4 h-14 w-14 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25">
-            <Sparkles className="h-7 w-7 text-primary-foreground" />
-          </div>
+    <div className="auth-form">
+      <Card className="auth-card">
+        <CardHeader className="auth-card-header">
           <h1 className="text-2xl font-bold text-foreground">Create an account</h1>
-          <p className="text-muted-foreground text-sm mt-1">Start your financial journey today</p>
+          <p className="text-muted-foreground text-sm mt-1">Create your personal Finance workspace</p>
         </CardHeader>
         <form onSubmit={handleRegister}>
           <CardContent className="space-y-4 px-6">
@@ -69,10 +60,11 @@ export default function RegisterPage() {
                 <Input
                   id="name"
                   type="text"
+                  autoComplete="name"
                   placeholder="Your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="pl-10 h-11 rounded-xl"
+                  className="pl-10"
                   required
                 />
               </div>
@@ -84,10 +76,11 @@ export default function RegisterPage() {
                 <Input
                   id="email"
                   type="email"
+                  autoComplete="email"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 h-11 rounded-xl"
+                  className="pl-10"
                   required
                 />
               </div>
@@ -99,10 +92,11 @@ export default function RegisterPage() {
                 <Input
                   id="password"
                   type="password"
+                  autoComplete="new-password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 h-11 rounded-xl"
+                  className="pl-10"
                   minLength={6}
                   required
                 />
@@ -111,18 +105,18 @@ export default function RegisterPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4 px-6 pb-8">
-            <Button 
-              type="submit" 
-              className="w-full h-11 rounded-xl font-semibold shadow-lg shadow-primary/25" 
+            <Button
+              type="submit"
+              className="w-full h-11 font-semibold"
               disabled={loading}
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   Creating account...
                 </>
               ) : (
-                'Create Account'
+                'Create account'
               )}
             </Button>
             <p className="text-sm text-muted-foreground text-center">

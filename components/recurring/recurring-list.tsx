@@ -69,8 +69,8 @@ export function RecurringList({ recurring }: RecurringListProps) {
   if (recurring.length === 0) {
     return (
       <Card>
-        <CardContent className="py-12 text-center text-gray-500">
-          No recurring transactions yet. Add one to automate your regular income and expenses!
+        <CardContent className="py-12 text-center text-muted-foreground">
+          No recurring transactions yet. Add a schedule to track your regular income and expenses.
         </CardContent>
       </Card>
     )
@@ -84,21 +84,21 @@ export function RecurringList({ recurring }: RecurringListProps) {
         return (
           <Card key={item.id}>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1">
+              <div className="recurring-row">
+                <div className="recurring-description flex items-center gap-3 min-w-0 flex-1">
                   <div className="text-2xl">{category?.icon || '💰'}</div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-semibold">{category?.name || 'Uncategorized'}</h3>
                       <Badge variant={item.is_active ? 'default' : 'secondary'} className="text-xs">
                         {item.is_active ? 'Active' : 'Paused'}
                       </Badge>
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-muted-foreground">
                       {account?.name} • {item.frequency} • Next: {formatDate(item.next_date)}
                     </div>
                     {item.description && (
-                      <p className="text-sm text-gray-400 mt-1">{item.description}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
                     )}
                   </div>
                 </div>
@@ -106,7 +106,7 @@ export function RecurringList({ recurring }: RecurringListProps) {
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className={`font-semibold ${
-                      item.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      item.type === 'income' ? 'text-income' : 'text-expense'
                     }`}>
                       {item.type === 'income' ? '+' : '-'}{formatCurrency(item.amount)}
                     </p>
@@ -114,33 +114,33 @@ export function RecurringList({ recurring }: RecurringListProps) {
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" aria-label={`Manage ${item.description || 'recurring transaction'}`}>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleProcessNow(item)}>
-                        <Play className="h-4 w-4 mr-2" />
-                        Process Now
+                        <Play className="h-4 w-4" />
+                        Post now
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleToggle(item)}>
                         {item.is_active ? (
                           <>
-                            <Pause className="h-4 w-4 mr-2" />
+                            <Pause className="h-4 w-4" />
                             Pause
                           </>
                         ) : (
                           <>
-                            <Play className="h-4 w-4 mr-2" />
+                            <Play className="h-4 w-4" />
                             Activate
                           </>
                         )}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleDelete(item)}
-                        className="text-red-600"
+                        className="text-expense"
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
+                        <Trash2 className="h-4 w-4" />
                         Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>

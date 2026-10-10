@@ -11,6 +11,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { initializeUserData } from '@/lib/init-user-data'
 import { Sparkles, Loader2, Mail, Lock } from 'lucide-react'
+import { loginReturnPath } from '@/lib/mcp/remote/consent'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -40,7 +41,7 @@ export default function LoginPage() {
     }
 
     toast.success('Welcome back!')
-    router.push('/')
+    router.push(loginReturnPath(new URLSearchParams(window.location.search).get('next')))
     router.refresh()
   }
 

@@ -181,3 +181,23 @@ test('ChatGPT boundary rejects unknown fields, missing retry data, excessive bod
  assert.equal((await handleChatGptQuickLog(request({text:'Badminton queue 250pesos'},'https://attacker.example'),'preview',forward)).status,403);
  assert.equal(calls,0);
 });
+
+test('Dot testing supplies the server key for header-free requests and preserves scoped saves and retries',async()=>{
+ const {db,key,count}=await fixture();try{
+  await key();await db.exec("set role anon;select set_config('request.jwt.claim.sub','',false)");
+  const forward=(request:Request)=>handleQuickLog(request,async args=>({data:(await db.query<{r:unknown}>('select submit_quick_log($1,$2::uuid,$3,$4,$5::date,$6) r',[args.p_token,args.p_request_id,args.p_text,args.p_action,args.p_date,args.p_digest])).rows[0].r,error:null}));
+  const request=(body:unknown,authorization?:string,origin?:string)=>new Request('https://tracker.example/api/v1/chatgpt/preview',{method:'POST',headers:{'Content-Type':'application/json',...(authorization?{Authorization:authorization}:{}),...(origin?{Origin:origin}:{})},body:JSON.stringify(body)});
+  const body={text:'Synthetic Dot test 12.30 Cash'};
+  assert.equal((await handleChatGptQuickLog(request(body),'preview',forward)).status,401);
+  assert.equal((await handleChatGptQuickLog(request(body),'preview',forward,'invalid')).status,401);
+  assert.equal((await handleChatGptQuickLog(request(body,'Bearer invalid'),'preview',forward,token)).status,401);
+  assert.equal((await handleChatGptQuickLog(request(body,undefined,'https://other.example'),'preview',forward,token)).status,403);
+  assert.equal((await handleChatGptQuickLog(request({...body,owner:other}),'preview',forward,token)).status,400);
+  const response=await handleChatGptQuickLog(request(body),'preview',forward,token);assert.equal(response.status,200);
+  const preview=await response.json();assert.equal(preview.persisted,false);assert.equal(preview.entry.account_id,cash);
+  const send=()=>handleChatGptQuickLog(request(preview.retry),'commit',forward,token);
+  const saved=await send();assert.equal(saved.status,201);const receipt=await saved.json();assert.equal(receipt.persisted,true);assert.ok(receipt.transaction_id);
+  const retried=await send();assert.equal(retried.status,200);assert.equal((await retried.json()).transaction_id,receipt.transaction_id);
+  await db.exec('reset role');assert.equal(await count('transactions'),1);assert.equal(await count('financial_audit'),1);
+ }finally{await db.close();}
+});

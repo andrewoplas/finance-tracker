@@ -13,12 +13,14 @@ const commitInput = z.object({
 }).strict();
 
 /** Actions use a JSON retry object, rather than a custom idempotency header.
- * Forward locally through the same scoped HTTP boundary; no new auth or save path.
+ * Forward locally through the same scoped HTTP boundary. During temporary Dot
+ * testing, the server supplies its configured key when the caller sends none.
  */
 export async function handleChatGptQuickLog(
   request: Request,
   action: 'preview' | 'commit',
   forward: (request: Request) => Promise<Response>,
+  testToken?: string,
 ) {
   try {
     const input = (action === 'preview' ? previewInput : commitInput).safeParse(await readJson(request));
@@ -29,6 +31,9 @@ export async function handleChatGptQuickLog(
     for (const name of ['authorization', 'origin']) {
       const header = request.headers.get(name);
       if (header !== null) headers.set(name, header);
+    }
+    if (!headers.has('authorization') && testToken && /^ft_quick_[a-f0-9]{64}$/.test(testToken)) {
+      headers.set('authorization', `Bearer ${testToken}`);
     }
     const response = await forward(new Request(request.url, {
       method: 'POST', headers,

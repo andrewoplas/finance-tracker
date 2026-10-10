@@ -5,5 +5,6 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export function POST(request: Request) {
-  return handleChatGptQuickLog(request, 'commit', quickLog);
+  const testToken = process.env.FINANCE_DOT_TEST_MODE === 'true' ? process.env.FINANCE_DOT_TEST_KEY : undefined;
+  return handleChatGptQuickLog(request, 'commit', quickLog, testToken);
 }

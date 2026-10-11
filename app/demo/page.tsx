@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   ArrowLeftRight,
   CalendarDays,
+  Inbox,
 } from "lucide-react";
 export default async function DemoPage({
   searchParams,
@@ -25,6 +26,7 @@ export default async function DemoPage({
           <Link className={query.view === "transactions" ? "active" : ""} href={`/demo?month=${month}&view=transactions`}><ArrowLeftRight size={18}/> Transactions</Link>
           <Link className={query.view === "analysis" ? "active" : ""} href={`/demo?month=${month}&view=analysis`}><CalendarDays size={18}/> Planning</Link>
           <Link href={`/demo?month=${month}&view=reflection`}>Reports & reflection</Link>
+          <Link href="/demo/inbox"><Inbox size={18}/> Inbox</Link>
         </nav>
         <div className="sidebar-note"><small>Synthetic preview<br/>No account connected</small><Link href="/login">Sign in</Link></div>
       </aside>

@@ -2,7 +2,7 @@
 import { MonthlyLink as Link } from "@/components/dashboard/monthly-link";
 import {usePathname,useSearchParams,useRouter} from 'next/navigation'
 import {useEffect,useRef,useState} from 'react'
-import {Home,ArrowLeftRight,CalendarDays,BarChart3,Settings,Plus,X} from 'lucide-react'
+import {Home,ArrowLeftRight,CalendarDays,BarChart3,Settings,Inbox,Plus,X} from 'lucide-react'
 import {Drawer,DrawerContent,DrawerHeader,DrawerTitle,DrawerDescription} from '@/components/ui/drawer'
 import {TransactionInspector} from '@/components/transactions/transaction-inspector'
 import {entrySchema,manilaToday,type LedgerEntry} from '@/lib/finance/core'
@@ -22,6 +22,7 @@ export function BottomNavigation({demo=false}:{demo?:boolean}){
   {name:'Transactions',href:`${base}?${suffix}view=transactions`,icon:ArrowLeftRight,active:pathname===base&&search.get('view')==='transactions'},
   {name:'Planning',href:`${base}?${suffix}view=analysis`,icon:CalendarDays,active:(pathname===base&&search.get('view')==='analysis')||['plans','budgets','recurring'].some(p=>pathname===`${base}/${p}`)},
   {name:'Reports',href:demo?`${base}?${suffix}view=reflection`:`/dashboard/reports${month ? `?month=${month}` : ''}`,icon:BarChart3,active:pathname.endsWith('/reports')||(pathname===base&&search.get('view')==='reflection')},
+  {name:'Inbox',href:`${base}/inbox`,icon:Inbox,active:pathname===`${base}/inbox`},
   ...(!demo?[{name:'Settings',href:'/dashboard/settings',icon:Settings,active:['/dashboard/settings','/dashboard/accounts'].includes(pathname)}]:[]),
  ];
  useEffect(()=>{

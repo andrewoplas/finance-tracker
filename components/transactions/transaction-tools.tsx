@@ -1,10 +1,8 @@
 "use client";
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { type FrequentTransaction } from '@/lib/actions/frequent-transactions';
 import { QuickActions } from './quick-actions';
 import { AiTransactionDialog } from './ai-transaction-dialog';
-import { SmsWorkspace } from '@/components/sms/sms-workspace';
-import { QuickLogWorkspace } from '@/components/sms/quick-log-workspace';
 import type { OverviewData } from '@/components/dashboard/monthly-overview';
 export function TransactionTools({ entries, accounts, categories }: Pick<OverviewData, 'entries' | 'accounts'> & { categories: { id: string; name: string }[] }) {
   const frequent = useMemo(() => {
@@ -25,10 +23,8 @@ export function TransactionTools({ entries, accounts, categories }: Pick<Overvie
     }
     return [...grouped.values()].sort((a, b) => b.frequency - a.frequency).slice(0, 5);
   }, [entries, accounts, categories]);
-  const [review, setReview] = useState(false);
   return <div className="transaction-tools">
     <div className="workflow-actions"><button className="solid-button" onClick={() => { const url = new URL(window.location.href); url.searchParams.set('entry', '1'); window.history.pushState(null, '', url); }}>Add transaction</button><AiTransactionDialog /></div>
     <QuickActions frequentTransactions={frequent} historyLabel="Based on transactions in the selected month" />
-    <details className="surface" onToggle={event => setReview(event.currentTarget.open)}><summary>Review incoming purchases</summary>{review && <><SmsWorkspace /><QuickLogWorkspace /></>}</details>
   </div>;
 }

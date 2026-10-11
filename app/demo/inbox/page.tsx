@@ -7,7 +7,5 @@ export default function DemoInbox() {
     <PageHeading title="Inbox" description="Synthetic preview · Nothing is sent or saved." action={<Link className="text-button" href="/demo">← Overview</Link>} />
     <div className="surface"><SmsWorkspace demo /></div>
     <div className="surface"><QuickLogWorkspace demo /></div>
-    <div className="surface"><SmsWorkspace demo setup /></div>
-    <div className="surface"><QuickLogWorkspace demo setup /></div>
   </div>;
 }

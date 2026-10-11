@@ -11,6 +11,7 @@ import {
   BarChart3,
   Target,
   Settings,
+  Inbox,
   LogOut,
   Menu,
 
@@ -26,6 +27,7 @@ const navItems = [
   { href: '/dashboard?view=transactions', label: 'Transactions', icon: ArrowLeftRight },
   { href: '/dashboard?view=analysis', label: 'Planning', icon: Target },
   { href: '/dashboard/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/dashboard/inbox', label: 'Inbox', icon: Inbox },
 ];
 const bottomNavItems = [{ href: '/dashboard/settings', label: 'Settings', icon: Settings }];
 

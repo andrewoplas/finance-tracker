@@ -6,7 +6,7 @@ import { PlanningTabs } from "@/components/layout/planning-tabs";
 import { TransactionTools } from "@/components/transactions/transaction-tools";
 import { MonthlyLink } from "./monthly-link";
 import {PeriodPicker} from "./period-picker";
-import {activityDateLabel} from "@/lib/finance/date-label";
+import {activityDateLabel, activityTimeLabel} from "@/lib/finance/date-label";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TransactionInspector } from "@/components/transactions/transaction-inspector";
 import {
@@ -161,7 +161,7 @@ export function MonthlyOverview({
     (!accountFilter || t.account_id === accountFilter) && (!typeFilter || t.type === typeFilter) &&
     (!dateFrom || t.date >= dateFrom) && (!dateTo || t.date <= dateTo) &&
     (filter === "all" || (filter === "pending" ? t.review_status === "pending" : filter.startsWith("tag:") ? (t.tag_ids ?? []).includes(filter.slice(4)) : t.category_id === filter))
-  ).sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+  ).sort((a, b) => b.date.localeCompare(a.date) || (b.time ?? "").localeCompare(a.time ?? "") || a.id.localeCompare(b.id));
   const filteredTotals = visible.reduce((totals, t) => {
     if (t.type === 'income') totals.income += minor(t.amount);
     if (t.type === 'expense') totals.expense += minor(t.amount);
@@ -169,7 +169,7 @@ export function MonthlyOverview({
   }, { income: 0, expense: 0 });
   function exportTransactions() {
     const quote = (value: string) => `"${value.replace(/"/g, '""')}"`;
-    const rows = [['Date', 'Type', 'Amount', 'Category', 'Account', 'Description'], ...visible.map(t => [t.date, t.type, t.amount, categoryNames.get(t.category_id ?? '') ?? '', accountNames.get(t.account_id) ?? '', t.description])];
+    const rows = [['Date', 'Time (Manila)', 'Type', 'Amount', 'Category', 'Account', 'Description'], ...visible.map(t => [t.date, t.time ?? "", t.type, t.amount, categoryNames.get(t.category_id ?? '') ?? '', accountNames.get(t.account_id) ?? '', t.description])];
     const url = URL.createObjectURL(new Blob([rows.map(row => row.map(quote).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = url; link.download = `transactions-${month}.csv`; link.click(); URL.revokeObjectURL(url);
@@ -434,7 +434,7 @@ export function MonthlyOverview({
                     {!!t.tag_ids?.length && <span className="transaction-tags">{t.tag_ids.map(id => <span key={id}>#{data.tags?.find(tag=>tag.id===id)?.name ?? "Tag"}</span>)}</span>}
                     <small>
                       {transactionCategories.find(c=>c.id===t.category_id)?.name ?? (t.type==="transfer"?"Transfer":"Uncategorized")} · {data.accounts.find((a) => a.id === t.account_id)?.name ??
-                        "Account"}
+                        "Account"} · {activityTimeLabel(t.time)}
                     </small>
                   </span>
                   <span className="activity-category">

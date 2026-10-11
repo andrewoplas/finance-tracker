@@ -2,7 +2,7 @@
 import { useId, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { ZodError } from "zod";
-import { entrySchema, type LedgerEntry } from "@/lib/finance/core";
+import { expenseWriteSchema, manilaToday, type LedgerEntry } from "@/lib/finance/core";
 import { commitOperation } from "@/lib/finance/client";
 import type { Operation } from "@/lib/finance/contracts";
 type Audit = {
@@ -33,8 +33,7 @@ export function TransactionInspector({
   onCancel?: () => void;
 }) {
   const formId = useId();
-  const [categoryQuery,setCategoryQuery] = useState("");
-  const [draft, setDraft] = useState(entry),
+  const [draft, setDraft] = useState(() => ({ ...entry, time: entry.time ?? (creating && entry.date === manilaToday() ? new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Manila", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date()) : null) })),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [history, setHistory] = useState<Audit[] | null>(null),
@@ -55,7 +54,7 @@ export function TransactionInspector({
       } = draft;
       void reportKind;
       void reversed;
-      const parsed = entrySchema.parse({
+      const parsed = expenseWriteSchema.parse({
         ...values,
         review_status: "reviewed",
       });
@@ -125,6 +124,7 @@ export function TransactionInspector({
       | "description"
       | "amount"
       | "date"
+      | "time"
       | "report_month"
       | "bill_date"
       | "paid_date"
@@ -136,17 +136,18 @@ export function TransactionInspector({
       {label}
       <input
         type={type}
+        step={key === "time" ? "any" : undefined}
         inputMode={key === "amount" || key === "personal_amount" ? "decimal" : undefined}
         value={draft[key] ?? ""}
         onChange={(e) =>
           change(
             key,
-            (key === "bill_date" || key === "paid_date") && !e.target.value
+            (key === "bill_date" || key === "paid_date" || key === "time") && !e.target.value
               ? null
               : e.target.value,
           )
         }
-        required={key !== "bill_date" && key !== "paid_date"}
+        required={key !== "bill_date" && key !== "paid_date" && key !== "time"}
       />
     </label>
   );
@@ -165,8 +166,8 @@ export function TransactionInspector({
       }) : <p className="muted">Add tags in Settings.</p>}
     </div>
   </details> : <p className="muted">Tags unavailable. Existing tags will be preserved.</p>;
-  const categoryField = <label className="workflow-field">Category<select value={draft.category_id ?? ""} onChange={event => change("category_id", event.target.value || null)}>
-    <option value="">Uncategorized</option>{categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+  const categoryField = <label className="workflow-field">Category (required)<select required value={draft.category_id ?? ""} onChange={event => change("category_id", event.target.value || null)}>
+    <option value="" disabled>Choose a category</option>{categories.filter(category => !category.type || category.type === draft.type).map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
   </select></label>;
   const attributionFields = <>
     <label className="workflow-field">Whose expense?<select value={draft.attribution} onChange={event => change("attribution", event.target.value)}>
@@ -194,9 +195,9 @@ export function TransactionInspector({
         {field("description", "Description")}
         <div className={creating ? undefined : "inspector-field-row"}>
           {field("date", "Transaction date", "date")}
-          {!creating && draft.type === "expense" && categoryField}
+          {field("time", "Time (Manila, optional)", "time")}
         </div>
-        {creating && draft.type === "expense" && <details className="category-picker"><summary>Category <b>{categories.find(c=>c.id===draft.category_id)?.name??"Uncategorized"}</b></summary><input aria-label="Search categories" placeholder="Search categories" value={categoryQuery} onChange={event=>setCategoryQuery(event.target.value)}/><div className="category-options" role="group" aria-label="Expense categories">{[{id:"",name:"Uncategorized"},...categories.filter(c=>!c.type||c.type===draft.type)].filter(c=>c.name.toLowerCase().includes(categoryQuery.toLowerCase())).map(c=><button type="button" key={c.id} aria-pressed={(draft.category_id??"")===c.id} onClick={()=>change("category_id",c.id||null)}>{c.name}<span>{(draft.category_id??"")===c.id?"✓":""}</span></button>)}</div></details>}
+        {draft.type === "expense" && categoryField}
         {tagPicker}
         <details className="inspector-section">
           <summary><span>Dates & reporting</span><span className="inspector-summary-value">{reportMonth}{draft.bill_date || draft.paid_date ? " · Billing dates set" : ""}</span><ChevronDown size={16} /></summary>

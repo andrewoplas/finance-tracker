@@ -1,0 +1,54 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { PGlite } from '@electric-sql/pglite';
+import { readFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { type LedgerEntry, entrySchema, expenseWriteSchema } from '../lib/finance/core';
+import { activityTimeLabel } from '../lib/finance/date-label';
+const owner = '10000000-0000-4000-8000-000000000001';
+const account = '20000000-0000-4000-8000-000000000001';
+const category = '30000000-0000-4000-8000-000000000001';
+const tag = '40000000-0000-4000-8000-000000000001';
+const entry = { account_id: account, category_id: category, type: 'expense', amount: '25.00', description: 'Meal', date: '2026-10-11', report_month: '2026-10', time: '14:35', tag_ids: [tag], attribution: 'personal', personal_amount: '0', review_status: 'reviewed' };
+test('expense writes require categories while historical reads allow missing category and time', () => {
+  assert.equal(expenseWriteSchema.safeParse(entry).success, true);
+  assert.equal(expenseWriteSchema.safeParse({...entry, category_id: null}).success, false);
+  assert.equal(expenseWriteSchema.safeParse({...entry, type: 'income', category_id: null}).success, true);
+  assert.equal(entrySchema.safeParse({...entry, category_id: null, time: undefined}).success, true);
+  for (const time of ['24:00', '12:60', '9:00', '14:35Z']) assert.equal(expenseWriteSchema.safeParse({...entry, time}).success, false);
+  assert.equal(activityTimeLabel('00:00'), '12:00 AM');
+  assert.equal(activityTimeLabel('12:00'), '12:00 PM');
+  assert.equal(activityTimeLabel('14:35'), '2:35 PM');
+  assert.equal(activityTimeLabel(null), 'Time not recorded');
+});
+test('database persists times atomically, preserves tags, rejects uncategorized writes, and restores time on undo', async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(`create schema auth;create table auth.users(id uuid primary key,raw_user_meta_data jsonb);create role authenticated;create role anon;create role service_role;create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;`);
+    for (const name of ['001_initial_schema','002_add_wallets','003_ledger_integrity','004_financial_operations','005_rebuildable_balances','006_financial_workflows','007_history_only_import','20261007035014_tags_and_planned_items']) await db.exec(await readFile(`supabase/migrations/${name}.sql`, 'utf8'));
+    await db.exec(`insert into auth.users values('${owner}','{}');select set_config('test.uid','${owner}',false);insert into accounts(id,user_id,name,type,balance) values('${account}','${owner}','Cash','cash',1000);insert into categories(id,user_id,name,type) values('${category}','${owner}','Food','expense');insert into tags(id,user_id,name) values('${tag}','${owner}','Lunch');insert into transactions(user_id,account_id,type,amount,description,date,report_month) values('${owner}','${account}','expense',1,'Legacy','2026-10-10','2026-10');`);
+    await db.exec(await readFile('supabase/migrations/20261011000000_expense_time_category.sql','utf8'));
+    const run = async <T = LedgerEntry>(operation: unknown, key = randomUUID()) => (await db.query<{result: T}>('select commit_financial_operation($1,$2::jsonb) result', [key, JSON.stringify(operation)])).rows[0].result;
+    const legacy = (await db.query<{time: null; category_id: null}>('select time,category_id from transactions')).rows[0];
+    assert.deepEqual(legacy, {time: null, category_id: null});
+    await assert.rejects(run({action:'create',entries:[{...entry,category_id:null}]}), /Choose a category/);
+    await assert.rejects(run({action:'create',entries:[{...entry,time:'25:00'}]}));
+    const key = randomUUID(), operation = {action:'create',entries:[entry]};
+    const [created] = await run<LedgerEntry[]>(operation,key);
+    assert.equal(created.time, '14:35:00');assert.deepEqual(created.tag_ids,[tag]);
+    assert.deepEqual(await run<LedgerEntry[]>(operation,key),[created]);
+    await assert.rejects(run({action:'amend',id:created.id,expected_revision:created.revision,entry:{...entry,category_id:null}}), /Choose a category/);
+    const amended = await run({action:'amend',id:created.id,expected_revision:created.revision,entry:{...entry,time:'09:15'}});
+    assert.equal(amended.time,'09:15:00');assert.equal(amended.revision,created.revision+1);
+    const audit = (await db.query<{id:string}>('select id::text from financial_audit where transaction_id=$1 order by id desc limit 1',[created.id])).rows[0];
+    await run({action:'undo',id:created.id,expected_audit_id:audit.id});
+    const restored = (await db.query<{time:string;tag_ids:string[];revision:number}>('select time,tag_ids,revision from transactions where id=$1',[created.id])).rows[0];
+    assert.equal(restored.time,'14:35:00');assert.deepEqual(restored.tag_ids,[tag]);
+    const withoutTime = {...entry};delete (withoutTime as Partial<typeof entry>).time;
+    const preserved = await run({action:'amend',id:created.id,expected_revision:restored.revision,entry:withoutTime});
+    assert.equal(preserved.time,'14:35:00');
+    const cleared = await run({action:'amend',id:created.id,expected_revision:preserved.revision,entry:{...entry,time:null}});
+    assert.equal(cleared.time,null);
+    assert.equal(Number((await db.query<{balance:string}>('select balance from accounts where id=$1',[account])).rows[0].balance),974);
+  } finally { await db.close(); }
+});

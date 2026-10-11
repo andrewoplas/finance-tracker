@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { entrySchema, dateOnly, monthOnly, amountSchema } from "./core";
+import { expenseWriteSchema, entrySchema, dateOnly, monthOnly, amountSchema } from "./core";
 const signedAmount = z.string().regex(/^-?(0|[1-9]\d{0,9})(\.\d{1,2})?$/);
 const target = { id: z.uuid(), expected_revision: z.number().int().positive() };
 export const operationSchema = z.discriminatedUnion("action", [
@@ -125,11 +125,11 @@ export const operationSchema = z.discriminatedUnion("action", [
   z
     .object({
       action: z.literal("create"),
-      entries: z.array(entrySchema).min(1).max(100),
+      entries: z.array(expenseWriteSchema).min(1).max(100),
     })
     .strict(),
   z
-    .object({ action: z.literal("amend"), ...target, entry: entrySchema })
+    .object({ action: z.literal("amend"), ...target, entry: expenseWriteSchema })
     .strict(),
   z.object({ action: z.literal("reverse"), ...target }).strict(),
   z

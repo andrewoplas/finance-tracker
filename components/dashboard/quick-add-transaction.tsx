@@ -79,6 +79,11 @@ export function QuickAddTransaction() {
     setLoading(true)
 
     // Validation
+    if (type === 'expense' && !categoryId) {
+      toast.error('Please select a category for this expense')
+      setLoading(false)
+      return
+    }
     if (!accountId) {
       toast.error('Please select an account')
       setLoading(false)

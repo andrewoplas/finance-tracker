@@ -88,6 +88,7 @@ export async function createEntries(
         amount: String(row.amount),
         description: row.description || "Transaction",
         date: row.date ?? manilaToday(),
+        time: row.time ?? null,
         to_account_id: row.to_account_id ?? null,
         report_month: String(row.date ?? manilaToday()).slice(0, 7),
       }),

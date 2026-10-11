@@ -43,6 +43,7 @@ export const entrySchema = z
     amount: amountSchema,
     description: z.string().trim().min(1).max(300),
     date: dateOnly,
+    time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d{1,6})?)?$/, "Use a valid time (HH:mm)").nullable().optional(),
     bill_date: dateOnly.nullable().default(null),
     paid_date: dateOnly.nullable().default(null),
     report_month: monthOnly,
@@ -81,6 +82,11 @@ export const entrySchema = z
       });
     }
   });
+// Historical/import drafts may be uncategorized; committed expense writes may not.
+export const expenseWriteSchema = entrySchema.superRefine((entry, ctx) => {
+  if (entry.type === "expense" && !entry.category_id)
+    ctx.addIssue({ code: "custom", path: ["category_id"], message: "Choose a category for this expense" });
+});
 export type Entry = z.infer<typeof entrySchema>;
 export type LedgerEntry = Entry & {
   id: string;

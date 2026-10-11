@@ -189,6 +189,7 @@ export function AiTransactionDialog({
 
       // Validate all transactions have required fields
       for (const t of transactions) {
+        if (t.type === 'expense' && !t.categoryId) throw new Error('Please select a category for every expense')
         if (!t.accountId) {
           throw new Error('Please select an account for all transactions')
         }

@@ -16,6 +16,8 @@ test('MCP modern discovery and legacy initialization use validated operations wi
   await db.exec(`create schema auth;create table auth.users(id uuid primary key,raw_user_meta_data jsonb);create role authenticated;create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;`);
   for (const name of ['001_initial_schema','002_add_wallets','003_ledger_integrity','004_financial_operations','005_rebuildable_balances','006_financial_workflows']) await db.exec(await readFile(`supabase/migrations/${name}.sql`,'utf8'));
   await db.exec(`insert into auth.users values('${owner}','{}'),('${other}','{}'); select set_config('test.uid','${owner}',false); insert into accounts(id,user_id,name,type,balance) values('${bank}','${owner}','Synthetic bank','bank',1000),('${foreign}','${other}','Other','bank',1000);`);
+  const category = randomUUID();
+  await db.query("insert into categories(id,user_id,name,type) values($1,$2,'Food','expense')",[category,owner]);
   let valid = true;
   const endpoint = financeMcp({enabled:true,origin,authenticate: async()=>valid,dispatch:async(request,action)=>{
     if(action==='context')return Response.json({currency:'PHP',owner});
@@ -36,7 +38,7 @@ test('MCP modern discovery and legacy initialization use validated operations wi
     assert.ok(tools.tools.find(t=>t.name==='finance_commit')?.inputSchema);
     const call=async(name:string,args:Record<string,unknown>)=>client.callTool({name,arguments:args});
     const parse=(r:Awaited<ReturnType<typeof call>>)=>JSON.parse((r.content as {text:string}[])[0].text);
-    const payload={request_id:randomUUID(),operation:{action:'create',entries:[{account_id:bank,type:'expense',amount:'25.10',description:'Synthetic meal',date:'2026-10-06',report_month:'2026-10',attribution:'personal',personal_amount:'25.10',review_status:'pending'}]}};
+    const payload={request_id:randomUUID(),operation:{action:'create',entries:[{account_id:bank,category_id:category,type:'expense',amount:'25.10',description:'Synthetic meal',date:'2026-10-06',report_month:'2026-10',attribution:'personal',personal_amount:'25.10',review_status:'pending'}]}};
     const preview=parse(await call('finance_preview',payload));assert.equal(preview.persisted,false);
     const args={...payload,digest:preview.digest};
     assert.equal((await call('finance_commit',{...args,digest:'0'.repeat(64)})).isError,true);

@@ -40,7 +40,7 @@ export default async function DashboardPage({
     } = await db.auth.getUser();
     if (!user) throw new Error("Sign in to load your overview.");
     if (year) {
-      const [categories, accounts, rows, recent] = await Promise.all([
+      const [categories, accounts, rows] = await Promise.all([
         db.from("categories").select("id,name,type").eq("user_id", user.id),
         db.from("accounts").select("id,name,balance,opening_balance,is_archived").eq("user_id", user.id).limit(1001),
         loadYearReport(async offset => {
@@ -50,14 +50,10 @@ export default async function DashboardPage({
             .order("report_month").order("entry->>id").range(offset, offset + 999);
           return { rows: (result.data ?? []).map(row => row.entry) as LedgerEntry[], count: result.count, error: !!result.error };
         }),
-        db.from("transactions").select("*").eq("user_id", user.id)
-          .gte("report_month", `${year}-01`).lte("report_month", `${year}-12`).is("reversed_at", null)
-          .order("date", { ascending: false }).order("time", { ascending: false, nullsFirst: false }).order("id").limit(5),
       ]);
-      if (recent.error || categories.error || accounts.error || !accounts.data || accounts.data.length > 1000) throw new Error("The yearly overview could not load completely.");
+      if (categories.error || accounts.error || !accounts.data || accounts.data.length > 1000) throw new Error("The yearly overview could not load completely.");
       data.transactionCategories = categories.data ?? [];
       data.reportEntries = rows;
-      data.entries = recent.data ?? [];
       data.accounts = accounts.data.map(({ id, name }) => ({ id, name }));
       data.netWorth = netWorth(accounts.data);
       return <MonthlyOverview key={year} year={year} month={month} data={data} />;

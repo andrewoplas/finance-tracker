@@ -9,7 +9,8 @@ No Codex worker or subscription login is needed. The existing regex-based
 
 ## Activation
 
-1. Apply `20261011020000_ai_sms_requests.sql`. It requires the existing
+1. Apply `20261011020000_ai_sms_requests.sql` and
+   `20261012000000_quick_log_quoted_description.sql`. It requires the existing
    quick-log migrations, including the
    expense time/category upgrades. It creates only a private request checkpoint
    table and a token-authenticated RPC; no credentials or expenses are created.
@@ -75,7 +76,9 @@ inbox entry, so inspect the response and log manually if appropriate.
 
 Unknown card endings return 422 `card_not_configured`. A mismatch between the
 parsed fields and Finance's preview returns 422 `preview_mismatch`; no commit
-is sent. Merchant selector syntax is sanitized; input cannot choose categories
+is sent. Merchants are passed as sanitized quoted descriptions, so numeric branch names
+(such as `WORKPLACE CAFE RAMOS 2`) are not parsed as extra amounts.
+Merchant selector syntax is sanitized; input cannot choose categories
 or accounts. Account/category ownership is enforced by Finance.
 
 ## Retry and cost controls

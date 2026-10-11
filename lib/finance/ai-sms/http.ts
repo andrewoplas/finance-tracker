@@ -91,8 +91,8 @@ export function makeSmsHandler(config: SmsConfig, parse: Parser, store: StateSto
         // Strip quick-log grammar from the description rather than letting an
         // SMS merchant select arbitrary dates, accounts, categories or tags.
         const merchant = p.merchant!.replace(/[^\p{L}\p{N} .&'()-]/gu, ' ').replace(/\s+/g, ' ').trim();
-        if (!merchant || /\d{4}-\d{2}-\d{2}|\b(?:time|category)\b/i.test(merchant)) return json({ error: 'merchant_needs_review', persisted: false }, 422);
-        const text = `${merchant} ${p.amount} ${p.date} ${selector(card.category)} ${card.account}`;
+        if (!merchant) return json({ error: 'merchant_needs_review', persisted: false }, 422);
+        const text = `description:"${merchant}" ${p.amount} ${p.date} ${selector(card.category)} ${card.account}`;
         const preview = await forward(id, { text, time: p.time, action: 'preview' });
         // Backend resolves ownership and category. Verify it did not reinterpret
         // the model's amount, account, date or purchase time before committing.

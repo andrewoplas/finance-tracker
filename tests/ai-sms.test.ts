@@ -163,7 +163,7 @@ test('SMS-only request saves and retries without a receipt timestamp', async () 
     parsed++; return purchase;
   }, async (_url, init) => {
     const body = JSON.parse(String(init?.body));
-    if (body.action === 'preview') return Response.json({ request_id: id, persisted: false, date: purchase.date, digest: 'b'.repeat(64), entry: { amount: purchase.amount, date: purchase.date, time: purchase.time }, summary: { account: 'Test Card', category: 'Spending' } });
+    if (body.action === 'preview') { assert.equal(body.text.startsWith('description:"Synthetic Shop" '), true); return Response.json({ request_id: id, persisted: false, date: purchase.date, digest: 'b'.repeat(64), entry: { amount: purchase.amount, date: purchase.date, time: purchase.time }, summary: { account: 'Test Card', category: 'Spending' } }); }
     committed++;
     return Response.json({ id: randomUUID(), transaction_id: randomUUID(), status: 'recorded', persisted: true, duplicate: false });
   });

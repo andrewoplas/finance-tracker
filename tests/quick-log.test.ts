@@ -8,7 +8,7 @@ import {handleChatGptQuickLog} from '../lib/finance/quick-log/chatgpt';
 const owner='10000000-0000-4000-8000-000000000001',other='10000000-0000-4000-8000-000000000002';
 const cash='20000000-0000-4000-8000-000000000001',card='20000000-0000-4000-8000-000000000002',foreign='20000000-0000-4000-8000-000000000003';
 const food='30000000-0000-4000-8000-000000000001',token='ft_quick_'+'a'.repeat(64);
-const migrations=['001_initial_schema','002_add_wallets','003_ledger_integrity','004_financial_operations','005_rebuildable_balances','006_financial_workflows','007_history_only_import','20261007035014_tags_and_planned_items','20261007070000_card_sms_inbox','20261007190256_quick_log','20261010000000_conversational_quick_log','20261011000000_expense_time_category','20261011010000_quick_log_time_category'];
+const migrations=['001_initial_schema','002_add_wallets','003_ledger_integrity','004_financial_operations','005_rebuildable_balances','006_financial_workflows','007_history_only_import','20261007035014_tags_and_planned_items','20261007070000_card_sms_inbox','20261007190256_quick_log','20261010000000_conversational_quick_log','20261011000000_expense_time_category','20261011010000_quick_log_time_category','20261012000000_quick_log_quoted_description'];
 async function fixture(){
  const db=new PGlite();await db.exec(`create schema auth;create table auth.users(id uuid primary key,raw_user_meta_data jsonb);create role authenticated;create role anon;create role service_role;create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;`);
  for(const name of migrations)await db.exec(await readFile(`supabase/migrations/${name}.sql`,'utf8'));
@@ -255,5 +255,22 @@ test('Dot time survives preview, commit, audit and retry; changing it invalidate
   const row=(await db.query<{time:string;category_id:string}>("select time::text,category_id from transactions where id=$1",[receipt.transaction_id])).rows[0];assert.equal(row.time,'14:35:00');assert.equal(row.category_id,dining);
   assert.equal((await db.query<{time:string}>("select after_row->>'time' as time from financial_audit where transaction_id=$1",[receipt.transaction_id])).rows[0].time,'14:35:00');
   assert.equal(await count('transactions'),1);
+ }finally{await db.close();}
+});
+
+test('quoted merchant descriptions preserve branch numbers through preview, commit and replay',async()=>{
+ const {db,key,parse,invoke,count}=await fixture();try{
+  await categories(db);await key();
+  const text='description:"WORKPLACE CAFE RAMOS 2" 655.00 2026-10-11 category:"Food & Dining" RCBC Flex Visa time:18:14';
+  const parsed=await parse(text);
+  assert.equal(parsed.description,'WORKPLACE CAFE RAMOS 2');assert.equal(parsed.amount,'655.00');assert.equal(parsed.time,'18:14');assert.equal(parsed.account_id,card);
+  assert.equal((await parse('WORKPLACE CAFE RAMOS 2 655.00 2026-10-11 category:"Food & Dining" RCBC Flex Visa')).error,'amount_ambiguous');
+  for(const bad of ['description:"A" description:"B" 655 category:Sports cash','description:"A" extra 655 category:Sports cash','description:"" 655 category:Sports cash','description:"A" 655 2 category:Sports cash'])assert.ok((await parse(bad)).error,bad);
+  const id=randomUUID(),preview=await invoke(text,'preview',id);
+  assert.equal(preview.persisted,false);
+  const saved=await invoke(text,'commit',id,String(preview.date),String(preview.digest));
+  assert.equal(saved.persisted,true);assert.equal(saved.status,'recorded');
+  const replay=await invoke(text,'commit',id,String(preview.date),String(preview.digest));
+  assert.equal(replay.transaction_id,saved.transaction_id);assert.equal(await count('transactions'),1);
  }finally{await db.close();}
 });

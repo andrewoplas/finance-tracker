@@ -44,3 +44,6 @@ next-env.d.ts
 # Python skill client validation
 __pycache__/
 *.pyc
+
+# Private receipts from the discontinued local SMS worker experiment
+/.sms-worker-state/

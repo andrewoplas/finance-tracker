@@ -1,7 +1,7 @@
 import { minor, type LedgerEntry } from "./core";
 
 // One pass over report rows; keep report-month adjustments out of the daily timeline.
-export function spendingInsights(entries: LedgerEntry[], month: string, today: string) {
+export function spendingInsights(entries: LedgerEntry[], month: string, today: string, expenseCategory: (entry: LedgerEntry) => string | null = entry => entry.category_id) {
   const annual = month.length === 4;
   const dayCount = annual ? 12 : new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0)).getUTCDate();
   const elapsed = annual ? (month < today.slice(0, 4) ? 12 : month === today.slice(0, 4) ? Number(today.slice(5, 7)) : 0) : month < today.slice(0, 7) ? dayCount : month === today.slice(0, 7) ? Number(today.slice(8, 10)) : 0;
@@ -22,7 +22,8 @@ export function spendingInsights(entries: LedgerEntry[], month: string, today: s
     const categoryTotals = isIncome ? incomeCategories : categories;
     if (isIncome) income += amount;
     else total += amount;
-    categoryTotals.set(entry.category_id, (categoryTotals.get(entry.category_id) ?? 0) + amount);
+    const categoryId = isIncome ? entry.category_id : expenseCategory(entry);
+    categoryTotals.set(categoryId, (categoryTotals.get(categoryId) ?? 0) + amount);
     const date = entry.report_kind === "installment" ? entry.bill_date ?? entry.date : entry.date;
     if (!isIncome) purchases.push({ entry, amount, date });
     if (!annual && date.slice(0, 7) !== month) {

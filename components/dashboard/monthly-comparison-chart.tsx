@@ -1,38 +1,25 @@
 "use client";
 
-import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { InteractiveLines } from "./interactive-charts";
 import type { spendingInsights } from "@/lib/finance/spending-insights";
 
 const money = (value: number) => new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(value / 100);
-const compactMoney = (value: number) => new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", notation: "compact", maximumFractionDigits: 1 }).format(value / 100);
+
 
 export default function MonthlyComparisonChart({ insights, budget, monthLabel, throughLabel, annual = false }: {
   insights: ReturnType<typeof spendingInsights>; budget: number; monthLabel: string; throughLabel: string; annual?: boolean;
 }) {
   const tickLabel = (day: number) => annual ? new Intl.DateTimeFormat("en-PH", { month: "short", timeZone: "UTC" }).format(new Date(Date.UTC(2026, day - 1, 1))) : `${monthLabel} ${day}`;
   const points = insights.days.slice(0, insights.elapsed).map(day => ({ ...day, plan: Math.round(budget * day.day / insights.dayCount) }));
-  if (!insights.elapsed) return <p className="empty-copy">This month hasn’t started yet.</p>;
+  if (!insights.elapsed) return <p className="empty-copy">This period hasn’t started yet.</p>;
   return <>
     <p className="insight-help">Cumulative income and spending. Dated through {throughLabel}.</p>
-    <div className="insight-legend" aria-label="Chart legend">
-      <span><i className="insight-income-key" />Income</span>
-      <span><i className="insight-expense-key" />Spending</span>
-      {budget > 0 && <span><i className="insight-plan-key" />Spending plan · spread evenly</span>}
-    </div>
-    <div className="insight-chart" role="region" aria-label={`cumulative income and spending in Philippine pesos. Use arrow keys to explore the chart.`}>
-      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-        <ComposedChart data={points} margin={{ top: 20, right: 16, bottom: 0, left: 0 }} accessibilityLayer>
-          <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 5" />
-          <XAxis dataKey="day" type="number" domain={[1, Math.max(2, insights.elapsed)]} padding={{ left: 12, right: 12 }} ticks={[...new Set([1, Math.ceil(insights.elapsed / 2), insights.elapsed])]} tickFormatter={tickLabel} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickLine={false} axisLine={false} minTickGap={20} />
-          <YAxis tickFormatter={compactMoney} width={65} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickLine={false} axisLine={false} domain={[0, "auto"]} />
-          <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--foreground)" }} labelFormatter={day => tickLabel(Number(day))} formatter={(value, name) => [money(Number(value)), name]} />
-            <Area name="Spending" type="stepAfter" dataKey="actual" stroke="var(--expense)" fill="var(--expense)" fillOpacity={0.08} strokeWidth={2} dot={{ r: 2, fill: "var(--expense)", strokeWidth: 0 }} isAnimationActive={false} connectNulls={false} />
-            <Line name="Income" type="stepAfter" dataKey="actualIncome" stroke="var(--income)" strokeWidth={3} dot={{ r: 2, fill: "var(--income)", strokeWidth: 0 }} isAnimationActive={false} connectNulls={false} />
-          {budget > 0 && <Line name="Even daily spending plan" dataKey="plan" stroke="var(--muted-foreground)" strokeDasharray="5 5" dot={false} strokeWidth={1.5} isAnimationActive={false} />}
-          {insights.elapsed > 0 && insights.elapsed < insights.dayCount && <ReferenceLine x={insights.elapsed} stroke="var(--muted-foreground)" strokeDasharray="3 3" label={{ value: annual ? "Current month" : "Today", position: "insideTopLeft", fill: "var(--muted-foreground)", fontSize: 11 }} />}
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
+    <InteractiveLines labels={points.map(day => tickLabel(day.day))} datasets={[
+      { label: "Income", data: points.map(day => day.cumulativeIncome), borderColor: "#76d4b5", stepped: true },
+      { label: "Expenses", data: points.map(day => day.cumulative), borderColor: "#ffa3a7", stepped: true },
+      ...(budget > 0 ? [{ label: "Spending plan", data: points.map(day => day.plan), borderColor: "#a6adae", borderDash: [5, 5] }] : []),
+    ]} />
+    <details className="compact-chart-details"><summary>Chart data</summary><table><thead><tr><th>Period</th><th>Income</th><th>Expenses</th>{budget > 0 && <th>Plan</th>}</tr></thead><tbody>{points.map(day => <tr key={day.day}><th>{tickLabel(day.day)}</th><td>{money(day.cumulativeIncome)}</td><td>{money(day.cumulative)}</td>{budget > 0 && <td>{money(day.plan)}</td>}</tr>)}</tbody></table></details>
     <div className="insight-stats">
       <div><span>Income through {throughLabel}</span><strong>{money(insights.incomeToDate)}</strong></div>
       <div><span>Spending through {throughLabel}</span><strong>{money(insights.datedToDate)}</strong></div>

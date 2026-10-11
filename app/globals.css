@@ -1112,3 +1112,11 @@ button:focus-visible,a:focus-visible,summary:focus-visible { outline:2px solid v
  .category-pie-key { max-height:110px; }.category-pie-legend li>div,.category-pie-legend button { padding:6px 3px; }
  .compact-spending-bars { gap:2px; }.compact-spending-bars button { font-size:9px; }
 }
+
+/* Chart.js canvases use bounded responsive containers, independent of slide height. */
+.interactive-bar-chart { position:relative; width:100%; margin:16px 0; }
+.interactive-line-chart { position:relative; width:100%; height:260px; }
+.overview-carousel-card .category-pie-visual { position:relative; background:transparent; }
+.chart-data-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:6px; margin-top:10px; }
+.chart-data-list button { text-align:left; min-height:36px; }
+.compact-chart-details table { width:100%; margin-top:10px; text-align:left; font-variant-numeric:tabular-nums; }

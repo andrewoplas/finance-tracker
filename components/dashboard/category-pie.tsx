@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { InteractivePie } from "./interactive-charts";
 
 const money = (value: number) => new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(value / 100);
 const colors = ["#4da994", "#e6aa50", "#729dd5", "#c77ca5", "#a5ad5c", "#a487d0", "#df8067", "#68acbb"];
@@ -12,19 +13,12 @@ export function CategoryPie({ title, total, rows, names, selectedCategory, onSel
   onSelect?: (id: string | null) => void;
 }) {
   const [showAll, setShowAll] = useState(false);
-  let offset = 0;
-  const slices = [];
-  for (const [index, row] of rows.entries()) {
-    const start = offset;
-    offset += total ? row.amount / total * 100 : 0;
-    slices.push({ ...row, color: colors[index] ?? `hsl(${(index * 137.508) % 360} 45% 58%)`, start, end: offset });
-  }
-  const gradient = slices.map(slice => `${slice.color} ${slice.start}% ${slice.end}%`).join(", ");
+  const slices = rows.map((row, index) => ({ ...row, color: colors[index] ?? `hsl(${(index * 137.508) % 360} 45% 58%)` }));
   return <section className="category-pie-card" aria-label={title}>
     <h3>{title}</h3>
     <div className="category-pie-total">{money(total)}</div>
     {total > 0 ? <div className="category-pie-body">
-      <div className="category-pie-visual" role="img" aria-label={`${title}: ${money(total)}, split by category. Amounts and percentages listed below.`} style={{ background: `conic-gradient(${gradient})` }} />
+      <div className="category-pie-visual"><InteractivePie labels={slices.map(slice => names.get(slice.id ?? "") ?? "Uncategorized")} amounts={slices.map(slice => slice.amount)} colors={slices.map(slice => slice.color)} onSelect={onSelect ? index => onSelect(slices[index].id) : undefined} /></div>
       <div className="category-pie-key">
       <ul className="category-pie-legend">
         {(showAll ? slices : slices.slice(0, 5)).map(slice => {

@@ -83,7 +83,6 @@ export function MonthlyOverview({
   const requestedView = search.get("view") ?? initialView;
   const view = ["overview", "transactions", "analysis", "reflection"].includes(requestedView) ? requestedView : "overview";
   const [entries, setEntries] = useState(data.entries);
-  const [showRecent, setShowRecent] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<LedgerEntry | null>(null);
   const [notice, setNotice] = useState("");
@@ -206,7 +205,7 @@ export function MonthlyOverview({
             </div>
           )}
           {view === "overview" && <>
-            <SpendingInsights year={year} netWorth={data.netWorth} accountsHref={demo ? "/login" : "/dashboard/accounts"} entries={reportEntries} month={month} today={manilaToday()} budget={budget} categories={transactionCategories} planHref={demo ? `/demo?month=${month}&view=analysis` : `/dashboard/budgets?month=${month}`} />
+            <SpendingInsights tags={data.tags} year={year} entries={reportEntries} month={month} today={manilaToday()} budget={budget} categories={transactionCategories} planHref={demo ? `/demo?month=${month}&view=analysis` : `/dashboard/budgets?month=${month}`} />
             {!year && <MonthlyLink loadedMonth={month} className="review-link" href={route("transactions", "pending")}><span>Needs review · includes attribution</span><span><b className="review-count">{pending.length}</b><ChevronRight size={16}/></span></MonthlyLink>}
           </>}
           {view === "analysis" && <div className="analysis-view">
@@ -311,8 +310,7 @@ export function MonthlyOverview({
 
             </section>
           </div>}
-          {view === "overview" && !year && <button type="button" className="text-button overview-recent-toggle" aria-expanded={showRecent} aria-controls="activity" onClick={() => setShowRecent(value => !value)}>{showRecent ? "Hide recent transactions" : "Show recent transactions"}<ChevronDown size={16} aria-hidden="true" /></button>}
-          {(view === "transactions" || (view === "overview" && !year && showRecent)) && <section className="surface activity-panel" id="activity">
+          {(view === "transactions" || view === "overview") && <section className="surface activity-panel" id="activity">
             <div className="section-heading">
               <div>
                 <h2>{view === "overview" ? "Recent transactions" : filter === "pending" ? "Needs review" : "Transactions"}</h2>

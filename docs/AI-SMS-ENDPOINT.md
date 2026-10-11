@@ -105,6 +105,12 @@ for safe retries. No ledger history is fetched or sent to OpenAI.
 
 HTTP and disposable PostgreSQL tests cover authentication, quotas, credential
 isolation, revocation, leases, checkpoint immutability, mismatched previews,
-duplicate replay, and uncertain commits. Live OpenAI parsing requires the API
-key; public HTTP and phone automation require activation/deployment verification.
-Do not test sample purchases by writing them to the production ledger.
+duplicate replay, and uncertain commits.
+
+Production activation and deployment were verified October 11, 2026. The
+configured OpenAI key accessed GPT-5 nano and correctly extracted two supplied
+RCBC notifications and rejected a promotion. Public HTTP checks returned 401
+without the bearer, ignored a promotion without saving, replayed the same result,
+and rejected an altered payload with the same UUID (409). Save/retry behavior
+passed mocked HTTP and disposable PostgreSQL tests; no test expense was saved
+to the production ledger. Phone automation execution remains unverified.

@@ -36,6 +36,7 @@ export default async function DemoPage({
           demo
           month={month}
           data={{
+            netWorth: { status: "ready", assets: 5500000, debts: 1200000, total: 4300000, accountCount: 2, unknownCount: 0 },
             entries: demoEntries(month),
             categories: demoCategories,
             accounts: [

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import type { NetWorth } from "@/lib/finance/net-worth";
 import { SpendingInsights } from "./spending-insights";
 import { PlanningTabs } from "@/components/layout/planning-tabs";
 import { TransactionTools } from "@/components/transactions/transaction-tools";
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 
 export type OverviewData = {
+  netWorth?: NetWorth;
   tags?: { id: string; name: string }[];
   tagsAvailable?: boolean;
   entries: LedgerEntry[];
@@ -201,7 +203,7 @@ export function MonthlyOverview({
             </div>
           )}
           {view === "overview" && <>
-            <SpendingInsights entries={reportEntries} month={month} today={manilaToday()} budget={budget} categories={transactionCategories} planHref={demo ? `/demo?month=${month}&view=analysis` : `/dashboard/budgets?month=${month}`} />
+            <SpendingInsights netWorth={data.netWorth} accountsHref={demo ? "/login" : "/dashboard/accounts"} entries={reportEntries} month={month} today={manilaToday()} budget={budget} categories={transactionCategories} planHref={demo ? `/demo?month=${month}&view=analysis` : `/dashboard/budgets?month=${month}`} />
             <MonthlyLink loadedMonth={month} className="review-link" href={route("transactions", "pending")}><span>Needs review · includes attribution</span><span><b className="review-count">{pending.length}</b><ChevronRight size={16}/></span></MonthlyLink>
           </>}
           {view === "analysis" && <div className="analysis-view">

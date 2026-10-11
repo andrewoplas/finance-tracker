@@ -1,3 +1,4 @@
+import { netWorth } from "@/lib/finance/net-worth";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -70,7 +71,7 @@ export default async function DashboardPage({
         .gte("next_date", manilaToday())
         .order("next_date")
         .limit(4),
-      db.from("accounts").select("id,name").eq("user_id", user.id),
+      db.from("accounts").select("id,name,balance,opening_balance,is_archived").eq("user_id", user.id).limit(1001),
       db
         .from("finance_report_rows")
         .select("entry")
@@ -100,6 +101,7 @@ export default async function DashboardPage({
       throw new Error(
         "This month exceeds the supported report size. Partial totals are not shown.",
       );
+    if (accounts.data.length > 1000) throw new Error("Too many accounts to load a complete overview. Partial net worth is not shown.");
     data.entries = transactions.data.map((t) => ({
       ...entrySchema.parse({
         account_id: t.account_id,
@@ -135,7 +137,8 @@ export default async function DashboardPage({
       ),
     }));
     data.reportEntries = reporting.data!.map((r) => r.entry) as LedgerEntry[];
-    data.accounts = accounts.data;
+    data.accounts = accounts.data.map(({ id, name }) => ({ id, name }));
+    data.netWorth = netWorth(accounts.data);
     data.tags = tags.error || (tags.data?.length ?? 0)>500 ? [] : tags.data ?? [];
     data.tagsAvailable = !tags.error && (tags.data?.length ?? 0)<=500;
     data.commitments = (commitments.data ?? []).map((c) => ({

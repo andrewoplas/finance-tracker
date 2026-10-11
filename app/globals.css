@@ -1025,3 +1025,24 @@ button:focus-visible,a:focus-visible,summary:focus-visible { outline:2px solid v
 .insight-income-list li { display:flex; justify-content:space-between; gap:12px; }
 .insight-comparison { margin-top:18px; }.insight-comparison>button { min-height:44px; }
 @media(max-width:800px) { .insight-main-view { grid-template-columns:minmax(0,1fr); gap:0; } }
+
+/* Account position first, then the selected month's category pies. */
+.net-worth-card { padding:4px 0 22px; border-bottom:1px solid var(--border); }
+.net-worth-card .section-heading { margin-bottom:6px; }
+.net-worth-card h2 { font-size:18px; font-weight:600; }
+.net-worth-total { font-size:clamp(28px,4vw,44px); font-weight:650; margin:16px 0; letter-spacing:-1px; overflow-wrap:anywhere; }
+.net-worth-parts { display:flex; gap:24px; flex-wrap:wrap; margin-bottom:12px; font-size:13px; }
+.net-worth-parts span { display:flex; gap:10px; color:var(--muted-foreground); }.net-worth-parts strong { color:var(--foreground); }
+.category-pies-period { margin:24px 0 14px; font-size:13px; color:var(--muted-foreground); }
+.category-pies { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.category-pie-card { padding:22px; border:1px solid var(--border); border-radius:16px; min-width:0; }
+.category-pie-total { font-size:clamp(22px,2.5vw,32px); font-weight:600; margin-top:8px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.category-pie-visual { width:min(100%,190px); aspect-ratio:1; border-radius:50%; margin:24px auto; background:var(--muted); }
+.category-pie-legend { list-style:none; margin:14px 0 0; padding:0; display:grid; gap:6px; }
+.category-pie-legend li>div,.category-pie-legend button { display:grid; grid-template-columns:10px minmax(0,1fr) auto 34px; gap:8px; align-items:center; width:100%; padding:9px 3px; font-size:12px; text-align:left; border-radius:6px; }
+.category-pie-legend i { width:9px; height:9px; border-radius:50%; }.category-pie-legend small { color:var(--muted-foreground); text-align:right; }
+.category-pie-legend button:hover,.category-pie-legend button[aria-pressed="true"] { background:var(--muted); }
+.category-pie-legend button[aria-pressed="true"] { outline:1px solid var(--muted-foreground); }
+.category-pie-legend strong { font-variant-numeric:tabular-nums; white-space:nowrap; }
+.category-pie-empty { text-align:center; }.income-expense-summary { padding:18px 0 10px; font-size:14px; }.income-expense-summary p { margin-top:6px; }
+@media(max-width:700px) { .category-pies { grid-template-columns:minmax(0,1fr); }.category-pie-card { padding:18px 14px; } }

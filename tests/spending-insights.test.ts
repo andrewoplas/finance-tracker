@@ -39,3 +39,51 @@ test("uncategorized expenses are included and category ranking uses amounts", ()
   assert.deepEqual(result.categories[0], { id: null, amount: 20000 });
   assert.equal(result.total, 20001);
 });
+
+test("income reconciles with earned income while collections and transfers stay separate", () => {
+  const entries = [
+    row({ type: "income", amount: "1000.01", date: "2026-10-01" }),
+    row({ type: "income", amount: "250", date: "2026-10-20" }),
+    row({ type: "income", amount: "50", date: "2026-09-30", category_id: null }),
+    row({ type: "income", reversed_at: "2026-10-03" }),
+    row({ type: "income", report_month: "2026-09" }),
+    row({ type: "income", report_kind: "collection", amount: "30" }),
+    row({ type: "transfer", amount: "9000" }),
+    row({ amount: "400" }),
+  ];
+  const result = spendingInsights(entries, "2026-10", "2026-10-11");
+  const report = monthlyReport(entries, "2026-10");
+  assert.equal(result.income, report.income);
+  assert.equal(result.collected, report.collected);
+  assert.equal(result.income, 130001);
+  assert.equal(result.incomeToDate, 100001);
+  assert.equal(result.incomeFuture, 25000);
+  assert.equal(result.incomeOutsideDates, 5000);
+  assert.equal(result.incomeMinusSpending, 90001);
+  assert.equal(result.incomeMinusSpending + result.collected, report.net);
+  assert.equal(result.days[0].dailyIncome, 100001);
+  assert.equal(result.days[10].actualIncome, 100001);
+  assert.equal(result.days[11].actualIncome, null);
+  assert.equal(result.days[19].dailyIncome, null);
+  assert.equal(result.days[19].income, 25000);
+  assert.equal(result.incomeCategories.reduce((sum, category) => sum + category.amount, 0), result.income);
+  assert.equal(result.incomeToDate + result.incomeFuture + result.incomeOutsideDates, result.income);
+});
+
+test("income-only, spending-only, and future months preserve zero and negative comparisons", () => {
+  const income = row({ type: "income", amount: "500" });
+  const incomeOnly = spendingInsights([income], "2026-10", "2026-11-01");
+  assert.equal(incomeOnly.total, 0);
+  assert.equal(incomeOnly.incomeMinusSpending, 50000);
+  assert.equal(incomeOnly.days[30].actualIncome, 50000);
+  const spendingOnly = spendingInsights([row({})], "2026-10", "2026-10-11");
+  assert.equal(spendingOnly.income, 0);
+  assert.equal(spendingOnly.incomeMinusSpending, -10000);
+  const future = spendingInsights([income], "2026-10", "2026-09-01");
+  assert.equal(future.incomeFuture, 50000);
+  assert.equal(future.incomeToDate, 0);
+  assert.ok(future.days.every(day => day.actualIncome === null && day.dailyIncome === null));
+  const empty = spendingInsights([], "2026-10", "2026-10-11");
+  assert.equal(empty.incomeMinusSpending, 0);
+  assert.deepEqual(empty.incomeCategories, []);
+});

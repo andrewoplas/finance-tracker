@@ -971,3 +971,27 @@ button:focus-visible,a:focus-visible,summary:focus-visible { outline:2px solid v
  .insight-chart-heading { flex-wrap:wrap; }
  .insight-categories .section-heading { align-items:start; flex-direction:column; gap:4px; }
 }
+
+/* Income and spending have equal prominence in the monthly overview. */
+.insight-overview-title { font-size:18px; font-weight:600; margin-bottom:4px; }
+.insight-totals { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; padding:24px 0 16px; }
+.insight-totals>div { display:flex; flex-direction:column; gap:8px; min-width:0; }
+.insight-totals strong { font-size:clamp(20px,2.4vw,32px); line-height:1.2; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.insight-totals small { color:var(--muted-foreground); font-size:12px; }
+.insight-income { color:var(--income); }.insight-expense { color:var(--expense); }
+.insight-plan { display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px; margin-top:18px; padding:14px 0; border-block:1px solid var(--border); font-size:12px; }
+.insight-plan>span { color:var(--muted-foreground); }.insight-plan a { text-decoration:underline; text-underline-offset:3px; }
+.insight-legend { display:flex; flex-wrap:wrap; gap:12px 20px; font-size:12px; color:var(--muted-foreground); margin-top:14px; }
+.insight-legend span { display:flex; align-items:center; gap:7px; }
+.insight-legend i { width:16px; height:3px; display:inline-block; }
+.insight-income-key { background:var(--income); }.insight-expense-key { background:var(--expense); }
+.insight-legend .insight-plan-key { height:0; border-top:2px dashed var(--muted-foreground); }
+.insight-breakdowns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:28px; }
+.insight-breakdowns .section-heading { flex-direction:column; align-items:start; gap:4px; }
+.insight-categories-income .insight-category-track>span { background:var(--income); }
+.insight-categories-spending .insight-category-track>span { background:var(--expense); }
+@media(max-width:700px) {
+ .insight-totals { grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px 12px; }
+ .insight-totals>div:last-child { grid-column:1/-1; }
+ .insight-breakdowns { grid-template-columns:minmax(0,1fr); gap:0; }
+}

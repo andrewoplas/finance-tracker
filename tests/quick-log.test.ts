@@ -8,7 +8,7 @@ import {handleChatGptQuickLog} from '../lib/finance/quick-log/chatgpt';
 const owner='10000000-0000-4000-8000-000000000001',other='10000000-0000-4000-8000-000000000002';
 const cash='20000000-0000-4000-8000-000000000001',card='20000000-0000-4000-8000-000000000002',foreign='20000000-0000-4000-8000-000000000003';
 const food='30000000-0000-4000-8000-000000000001',token='ft_quick_'+'a'.repeat(64);
-const migrations=['001_initial_schema','002_add_wallets','003_ledger_integrity','004_financial_operations','005_rebuildable_balances','006_financial_workflows','007_history_only_import','20261007035014_tags_and_planned_items','20261007070000_card_sms_inbox','20261007190256_quick_log','20261010000000_conversational_quick_log'];
+const migrations=['001_initial_schema','002_add_wallets','003_ledger_integrity','004_financial_operations','005_rebuildable_balances','006_financial_workflows','007_history_only_import','20261007035014_tags_and_planned_items','20261007070000_card_sms_inbox','20261007190256_quick_log','20261010000000_conversational_quick_log','20261011000000_expense_time_category','20261011010000_quick_log_time_category'];
 async function fixture(){
  const db=new PGlite();await db.exec(`create schema auth;create table auth.users(id uuid primary key,raw_user_meta_data jsonb);create role authenticated;create role anon;create role service_role;create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;`);
  for(const name of migrations)await db.exec(await readFile(`supabase/migrations/${name}.sql`,'utf8'));
@@ -21,8 +21,9 @@ async function fixture(){
 }
 test('separate shorthand parser requires owned explicit account, exact amounts and safe explicit tags',async()=>{
  const {db,parse}=await fixture();try{
-  const p=await parse('exp badminton food 210 cash');assert.equal(p.account_id,cash);assert.equal(p.description,'badminton');assert.equal(p.amount,'210.00');assert.deepEqual(p.tag_ids,[food]);assert.equal(p.category_id,null);assert.equal(p.date,'2026-10-07');
-  const c=await parse('exp SYNTHETIC SHOP 12.30 2026-01-02 RCBC');assert.equal(c.account_id,card);assert.equal(c.date,'2026-01-02');assert.equal(c.amount,'12.30');
+  await categories(db);
+  const p=await parse('exp badminton food 210 cash');assert.equal(p.account_id,cash);assert.equal(p.description,'badminton');assert.equal(p.amount,'210.00');assert.deepEqual(p.tag_ids,[food]);assert.equal(p.category_id,sports);assert.equal(p.date,'2026-10-07');
+  const c=await parse('exp SYNTHETIC SHOP 12.30 2026-01-02 category:Sports RCBC');assert.equal(c.account_id,card);assert.equal(c.date,'2026-01-02');assert.equal(c.amount,'12.30');
   assert.equal((await parse('exp lunch 210')).error,'account_required');
   assert.equal((await parse('exp lunch 210 Other Bank')).error,'account_required');
   for(const text of ['exp lunch 0 cash','exp lunch 1.234 cash','exp lunch 1,200 cash','exp lunch 210 99 cash','exp lunch 210 2026-02-30 cash','exp lunch 210 yesterday cash','exp refund 210 cash','exp repayment 210 cash','exp OTP 123456 cash','exp lunch #missing 210 cash','exp lunch category:missing 210 cash'])assert.ok((await parse(text)).error,text);
@@ -32,13 +33,14 @@ test('separate shorthand parser requires owned explicit account, exact amounts a
 });
 test('quick log preview, expense scope, audited commit, duplicate inbox, review and revocation',async()=>{
  const {db,key,invoke,count}=await fixture();try{
+  await categories(db);
   const credential=(await key()).rows[0].r;
   await db.exec("set role anon;select set_config('request.jwt.claim.sub','',false)");
   await assert.rejects(db.exec('select * from quick_log_credentials'),/permission denied/);
   await assert.rejects(db.exec('select * from quick_log_inbox'),/permission denied/);
   await assert.rejects(db.query('select finance_private.parse_quick_log($1,$2::uuid,$3::date)',['exp lunch 210 cash',owner,'2026-10-07']),/permission denied/);
   const text='exp synthetic badminton food 210 cash',id=randomUUID(),p=await invoke(text,'preview',id);
-  assert.equal(p.persisted,false);assert.deepEqual(p.summary,{account:'Cash',category:null,tags:['Food']});assert.equal((await invoke(text,'commit',id,String(p.date),'0'.repeat(64))).error,'preview_required');
+  assert.equal(p.persisted,false);assert.deepEqual(p.summary,{account:'Cash',category:'Sports',tags:['Food']});assert.equal((await invoke(text,'commit',id,String(p.date),'0'.repeat(64))).error,'preview_required');
   const saved=await invoke(text,'commit',id,String(p.date),String(p.digest));assert.equal(saved.persisted,true);assert.equal(saved.status,'recorded');
   assert.equal((await db.query<{uid:string|null}>('select auth.uid() uid')).rows[0].uid,null);
   assert.equal((await invoke(text,'commit',id,String(p.date),String(p.digest))).transaction_id,saved.transaction_id);
@@ -94,7 +96,7 @@ test('conversational amounts, Manila date defaults and obvious existing categori
    const p=await parse(phrase);assert.equal(p.amount,'250.00',phrase);assert.equal(p.description,'Badminton queue');assert.equal(p.account_id,cash);assert.equal(p.category_id,sports);assert.equal(p.date,'2026-10-07');assert.equal(p.report_month,'2026-10');
   }
   assert.equal((await parse('Coffee 12.30pesos cash')).category_id,dining);
-  assert.equal((await parse('Dog food 250pesos cash')).description,'Dog food');
+  assert.equal((await parse('Dog food 250pesos category:Sports cash')).description,'Dog food');
   assert.equal((await parse('Badminton queue 250 category:"Food & Dining" cash')).category_id,dining);
   assert.equal((await parse('Badminton queue 250pesos')).error,'account_required');
   for(const phrase of ['Badminton queue 0pesos Cash','Badminton queue -250pesos Cash','Badminton queue 1.234pesos Cash','Badminton queue 250pesos 300 Cash','Badminton queue 1,250pesos Cash','transfer 250pesos Cash','salary 250pesos Cash','Badminton queue 250pesos yesterday Cash','Badminton queue 250pesos 2026-02-30 Cash','Badminton queue 250pesos category:"Sports" category:"Food & Dining" Cash'])assert.ok((await parse(phrase)).error,phrase);
@@ -184,13 +186,13 @@ test('ChatGPT boundary rejects unknown fields, missing retry data, excessive bod
 
 test('Public Dot ignores caller credentials and preserves fixed-owner scoped saves and retries',async()=>{
  const {db,key,count}=await fixture();try{
-  await key();
+  await categories(db);await key();
   const foreignToken = 'ft_quick_' + 'b'.repeat(64);
   await db.exec(`select set_config('request.jwt.claim.sub','${other}',false)`); await key(foreignToken);
   await db.exec("set role anon;select set_config('request.jwt.claim.sub','',false)");
   const forward=(request:Request)=>handleQuickLog(request,async args=>({data:(await db.query<{r:unknown}>('select submit_quick_log($1,$2::uuid,$3,$4,$5::date,$6) r',[args.p_token,args.p_request_id,args.p_text,args.p_action,args.p_date,args.p_digest])).rows[0].r,error:null}));
   const request=(body:unknown,authorization?:string,origin?:string)=>new Request('https://tracker.example/api/v1/chatgpt/preview',{method:'POST',headers:{'Content-Type':'application/json',...(authorization?{Authorization:authorization}:{}),...(origin?{Origin:origin}:{})},body:JSON.stringify(body)});
-  const body={text:'Synthetic Dot test 12.30 Cash'};
+  const body={text:'Synthetic Dot test 12.30 category:Sports Cash'};
   assert.equal((await handleChatGptQuickLog(request(body),'preview',forward)).status,503);
   assert.equal((await handleChatGptQuickLog(request(body),'preview',forward,'invalid')).status,503);
   assert.equal((await handleChatGptQuickLog(request(body,'Bearer invalid'),'preview',forward,token)).status,200);
@@ -205,5 +207,53 @@ test('Public Dot ignores caller credentials and preserves fixed-owner scoped sav
   const retried=await send();assert.equal(retried.status,200);assert.equal((await retried.json()).transaction_id,receipt.transaction_id);
   await db.exec('reset role');assert.equal(await count('transactions'),1);assert.equal(await count('financial_audit'),1);
   assert.equal((await db.query<{user_id:string}>('select user_id from transactions')).rows[0].user_id,owner);
+ }finally{await db.close();}
+});
+
+test('quick-log requires a category and parses explicit Manila times without learning or inventing a time',async()=>{
+ const {db,parse,count}=await fixture();try{
+  await categories(db);
+  assert.equal((await parse('Unknown merchant 25 cash')).error,'category_required');
+  await remember(db,{description:'Legacy expense',category:null});
+  assert.equal((await parse('Legacy expense 25 cash')).error,'category_required');
+  for(const suffix of ['14:35','time:14:35','00:00','23:59:59']){
+   const p=await parse(`Lunch 25 ${suffix} cash`);
+   assert.equal(p.time,suffix.replace('time:',''));assert.equal(p.category_id,dining);assert.equal(p.description,'Lunch');
+  }
+  assert.equal((await parse('Lunch 25 cash time:14:35')).time,'14:35');
+  assert.equal((await parse('Lunch 25 cash')).time,null);
+  for(const time of ['24:00','12:60','9:30','12:00:60','time:noon'])assert.equal((await parse(`Lunch 25 ${time} cash`)).error,'invalid_time',time);
+  assert.equal((await parse('Lunch 25 12:00 time:12:00 cash')).error,'time_ambiguous');
+  assert.equal((await parse('Legacy expense 25 category:Sports cash')).category_id,sports);
+  assert.equal(await count('transactions'),1);
+ }finally{await db.close();}
+});
+
+test('HTTP preview rejects a stale uncategorized parser result before commit',async()=>{
+ const {db,key,invoke}=await fixture();try{
+  await categories(db);await key();
+  const p=await invoke('Lunch 25 cash');
+  const request=new Request('https://tracker.example/api/v1/quick-log',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`,'Idempotency-Key':randomUUID()},body:JSON.stringify({text:'Lunch 25 cash',action:'preview'})});
+  const response=await handleQuickLog(request,async()=>({data:{...p,entry:{...(p.entry as object),category_id:null}},error:null}));
+  assert.equal(response.status,422);assert.deepEqual(await response.json(),{error:'category_required'});
+ }finally{await db.close();}
+});
+
+test('Dot time survives preview, commit, audit and retry; changing it invalidates the digest',async()=>{
+ const {db,key,count}=await fixture();try{
+  await categories(db);await key();
+  const forward=(request:Request)=>handleQuickLog(request,async args=>({data:(await db.query<{r:unknown}>('select submit_quick_log($1,$2::uuid,$3,$4,$5::date,$6) r',[args.p_token,args.p_request_id,args.p_text,args.p_action,args.p_date,args.p_digest])).rows[0].r,error:null}));
+  const call=(action:'preview'|'commit',body:unknown)=>handleChatGptQuickLog(new Request(`https://tracker.example/api/v1/chatgpt/${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),action,forward,token);
+  const missing=await call('preview',{text:'Unknown merchant 25 cash'});assert.equal(missing.status,422);assert.deepEqual(await missing.json(),{error:'category_required'});
+  assert.equal((await call('preview',{text:'Lunch 25 cash',time:'25:00'})).status,400);
+  const response=await call('preview',{text:'Lunch 25 cash',time:'14:35'});assert.equal(response.status,200);
+  const p=await response.json();assert.equal(p.entry.time,'14:35');assert.equal(p.retry.time,'14:35');assert.equal(p.entry.category_id,dining);assert.equal(await count('transactions'),0);
+  const changed=await call('commit',{...p.retry,time:'14:36'});assert.equal(changed.status,409);assert.deepEqual(await changed.json(),{error:'preview_required'});
+  const removed=await call('commit',{request_id:p.retry.request_id,text:p.retry.text,date:p.retry.date,digest:p.retry.digest});assert.equal(removed.status,409);
+  const saved=await call('commit',p.retry);assert.equal(saved.status,201);const receipt=await saved.json();assert.equal(receipt.persisted,true);
+  const retry=await call('commit',p.retry);assert.equal(retry.status,200);assert.equal((await retry.json()).transaction_id,receipt.transaction_id);
+  const row=(await db.query<{time:string;category_id:string}>("select time::text,category_id from transactions where id=$1",[receipt.transaction_id])).rows[0];assert.equal(row.time,'14:35:00');assert.equal(row.category_id,dining);
+  assert.equal((await db.query<{time:string}>("select after_row->>'time' as time from financial_audit where transaction_id=$1",[receipt.transaction_id])).rows[0].time,'14:35:00');
+  assert.equal(await count('transactions'),1);
  }finally{await db.close();}
 });

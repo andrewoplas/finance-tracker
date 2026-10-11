@@ -15,3 +15,11 @@ Verification before activation:
 - Supported IAB checked desktop and 390×844 synthetic inbox/setup layouts, unresolved dates/possible duplicates, explicit key-scope acknowledgement, and disabled synthetic writes/key creation. No horizontal overflow.
 - Read-only production preflight confirmed the audited ledger, tags and compatible auth.uid claim binding; neither ingestion RPC/schema was active. Baseline Supabase advisors have existing search-path, GraphQL discovery, intentional authenticated ledger RPC, and password-protection warnings.
 - No credentials, production samples, ledger changes, resets/imports, or taxonomy backfills were performed for implementation verification. Live authenticated ingestion and Shortcut execution remain setup verification after approval.
+
+## Expense categories and times
+
+Apply `20261011000000_expense_time_category.sql`, then `20261011010000_quick_log_time_category.sql` before deploying the matching API update. Both replace functions only; existing ledger entries and inbox records are unchanged.
+
+Quick-log preview requires an owned expense category (explicit, consistently learned, or an unambiguous existing category match). Otherwise it returns HTTP 422 `category_required`; clarify with `category:Spending` or a quoted name such as `category:"Food & Dining"` and preview again. Tags remain optional and do not replace a category.
+
+Supply an explicit Manila time in the text (`Lunch 250 time:14:35 Cash`) or as an optional JSON `time` field (`HH:mm` or `HH:mm:ss`) on the quick-log or Dot preview/commit request. Use only one source of time. Invalid or multiple text times return `invalid_time` or `time_ambiguous`; invalid JSON time fields return HTTP 400. Missing times remain null; no time is inferred from history or receipt timestamps. Dot's returned retry object carries the optional time: submit it unchanged. Changing or removing the time requires a fresh preview. Reload the updated Actions schema to expose the optional JSON field to a GPT.

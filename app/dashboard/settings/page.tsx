@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TransactionExport } from "@/components/settings/transaction-export";
 import { PageHeading } from "@/components/layout/page-heading";
 import { QuickLogWorkspace } from '@/components/sms/quick-log-workspace';
 import { SmsWorkspace } from "@/components/sms/sms-workspace"
@@ -37,6 +38,8 @@ export default async function SettingsPage() {
       <ProfileSettings profile={profile} userEmail={user?.email || ''} />
 
       <section id="transaction-api" className="surface"><SmsWorkspace setup /><QuickLogWorkspace setup /></section>
+
+      {user && <TransactionExport userId={user.id} />}
 
       <TagManager tags={tags.error || (tags.data?.length ?? 0)>500 ? [] : tags.data ?? []} available={!tags.error && (tags.data?.length ?? 0)<=500} />
       <CategoryManager categories={categories || []} />

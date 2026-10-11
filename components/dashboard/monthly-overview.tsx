@@ -14,6 +14,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   ChevronRight,
+  ChevronDown,
   CircleHelp,
   X,
 } from "lucide-react";
@@ -77,6 +78,7 @@ export function MonthlyOverview({
   const requestedView = search.get("view") ?? initialView;
   const view = ["overview", "transactions", "analysis", "reflection"].includes(requestedView) ? requestedView : "overview";
   const [entries, setEntries] = useState(data.entries);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<LedgerEntry | null>(null);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -167,13 +169,7 @@ export function MonthlyOverview({
     if (t.type === 'expense') totals.expense += minor(t.amount);
     return totals;
   }, { income: 0, expense: 0 });
-  function exportTransactions() {
-    const quote = (value: string) => `"${value.replace(/"/g, '""')}"`;
-    const rows = [['Date', 'Time (Manila)', 'Type', 'Amount', 'Category', 'Account', 'Description'], ...visible.map(t => [t.date, t.time ?? "", t.type, t.amount, categoryNames.get(t.category_id ?? '') ?? '', accountNames.get(t.account_id) ?? '', t.description])];
-    const url = URL.createObjectURL(new Blob([rows.map(row => row.map(quote).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
-    const link = document.createElement('a');
-    link.href = url; link.download = `transactions-${month}.csv`; link.click(); URL.revokeObjectURL(url);
-  }
+
   const shown = view === "overview" ? visible.slice(0, 5) : visible;
   const days = [...new Set(shown.map(t => t.date))];
   const route = (nextView: string, nextFilter = "all") => `${base}?month=${month}&view=${nextView}&filter=${nextFilter}`;
@@ -389,7 +385,17 @@ export function MonthlyOverview({
               <div>
                 <h2>{view === "overview" ? "Recent transactions" : filter === "pending" ? "Needs review" : "Transactions"}</h2>
               </div>
-              {view === "overview" ? <MonthlyLink loadedMonth={month} href={route("transactions")}>See all <ChevronRight size={14}/></MonthlyLink> : <select
+              {view === "overview" ? <MonthlyLink loadedMonth={month} href={route("transactions")}>See all <ChevronRight size={14}/></MonthlyLink> : null}
+            </div>
+            {view === "transactions" && <div className={`transaction-filters ${filtersOpen ? "filters-open" : ""}`}>
+              <div className="transaction-filter-grid">
+                <label className="transaction-filter-search">Search
+                  <input type="search" placeholder="Description, amount, account…" value={searchText} onChange={e=>setSearchText(e.target.value)} />
+                </label>
+                <button type="button" className="transaction-filter-toggle" aria-expanded={filtersOpen} aria-controls="transaction-filter-account transaction-filter-type transaction-filter-activity transaction-filter-dates" onClick={()=>setFiltersOpen(open=>!open)}>{filtersOpen ? "Hide filters" : "Filters"}{[accountFilter,typeFilter,dateFrom,dateTo,filter !== "all" ? filter : ""].filter(Boolean).length > 0 && <span>{[accountFilter,typeFilter,dateFrom,dateTo,filter !== "all" ? filter : ""].filter(Boolean).length} active</span>}<ChevronDown size={16} aria-hidden="true" /></button>
+                <label id="transaction-filter-account" className="transaction-filter-secondary">Account<select value={accountFilter} onChange={e=>setAccountFilter(e.target.value)}><option value="">All accounts</option>{data.accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
+                <label id="transaction-filter-type" className="transaction-filter-secondary">Type<select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}><option value="">All types</option><option value="expense">Expenses</option><option value="income">Income</option><option value="transfer">Transfers</option></select></label>
+                <label id="transaction-filter-activity" className="transaction-filter-secondary">Activity<select
                 aria-label="Filter activity"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
@@ -402,17 +408,17 @@ export function MonthlyOverview({
                     {c.name}
                   </option>
                 ))}
-              </select>}
-            </div>
-            {view === "transactions" && <div className="transaction-filter-grid">
-              <input aria-label="Search transactions" placeholder="Search transactions" value={searchText} onChange={e=>setSearchText(e.target.value)} />
-              <select aria-label="Account" value={accountFilter} onChange={e=>setAccountFilter(e.target.value)}><option value="">All accounts</option>{data.accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select>
-              <select aria-label="Transaction type" value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}><option value="">All types</option>{["expense","income","transfer"].map(t=><option key={t} value={t}>{t}</option>)}</select>
-              <input aria-label="From date" type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} />
-              <input aria-label="To date" type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} />
-              <button className="text-button" onClick={()=>{setSearchText("");setAccountFilter("");setTypeFilter("");setDateFrom("");setDateTo("");setFilter("all");}}>Clear filters</button>
-              <p className="muted">{visible.length} transactions · Income {money(filteredTotals.income)} · Expenses {money(filteredTotals.expense)} · Net {money(filteredTotals.income - filteredTotals.expense)}</p>
-              <button className="text-button" onClick={exportTransactions} disabled={!visible.length}>Export CSV</button>
+              </select></label>
+              </div>
+              <div id="transaction-filter-dates" className="transaction-filter-dates">
+                <label>From<input type="date" aria-label="From date" max={dateTo || undefined} value={dateFrom} onChange={e=>setDateFrom(e.target.value)} /></label>
+                <label>To<input type="date" aria-label="To date" min={dateFrom || undefined} value={dateTo} onChange={e=>setDateTo(e.target.value)} /></label>
+                <button type="button" className="text-button" disabled={!searchText && !accountFilter && !typeFilter && !dateFrom && !dateTo && filter === "all"} onClick={()=>{setSearchText("");setAccountFilter("");setTypeFilter("");setDateFrom("");setDateTo("");setFilter("all");}}>Clear filters</button>
+              </div>
+              <div className="transaction-filter-summary" aria-live="polite">
+                <span>{visible.length} {visible.length === 1 ? "transaction" : "transactions"}</span>
+                <dl><div><dt>Income</dt><dd>{money(filteredTotals.income)}</dd></div><div><dt>Expenses</dt><dd>{money(filteredTotals.expense)}</dd></div><div><dt>Net</dt><dd>{money(filteredTotals.income - filteredTotals.expense)}</dd></div></dl>
+              </div>
             </div>}
             {days.map(date => <div className="transaction-day" key={date}><h3>{activityDateLabel(date)}</h3><div className="transaction-group">{shown.filter(t => t.date === date).map(t => (
                 <button

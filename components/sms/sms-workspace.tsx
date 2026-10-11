@@ -1,6 +1,8 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ChevronDown, KeyRound, Code2, ShieldCheck } from 'lucide-react';
+import { SettingsHeading } from '@/components/settings/settings-heading';
 
 type Choice = {id:string;name:string};
 type Key = {id:string;account_id:string;last4:string;label:string;expires_at:string;revoked_at:string|null;last_used_at:string|null};
@@ -18,9 +20,9 @@ export function SmsWorkspace({setup=false,demo=false}:{setup?:boolean;demo?:bool
   catch(error){setError(error instanceof Error?error.message:'Could not load SMS inbox.');}
  },[]);
  useEffect(()=>{if(demo){setData({keys:[],accounts:[{id:'20000000-0000-4000-8000-000000000001',name:'Synthetic card'}],categories:[{id:'30000000-0000-4000-8000-000000000001',name:'Synthetic category'}],tags:[{id:'40000000-0000-4000-8000-000000000001',name:'Food'}],total:1,inbox:[{id:'50000000-0000-4000-8000-000000000001',account_id:'20000000-0000-4000-8000-000000000001',last4:'1234',merchant:'SYNTHETIC MARKET',amount:'123.45',received_at:'2026-10-07T03:40:00+08:00',sms_date_label:'10/07 3:38AM (Asia/Manila; no year in SMS)',transaction_date:null,date_issue:'sms_date_unresolved',possible_duplicate:true,revision:1}]});return;}void load();},[load,demo]);
- return <section className="sms-workspace">
+ return <section className={setup ? "sms-workspace settings-connection" : "sms-workspace"}>
   {demo && <p className="notice">Synthetic preview. Saving and key creation are disabled.</p>}
-  {setup ? <><h2>Transaction API</h2><p className="muted">Send RCBC purchase messages straight to your <Link href="/dashboard/inbox">SMS inbox</Link>. No AI service is used. Review items in the app before they affect spending.</p></> : <><h2>SMS inbox</h2><p className="muted">Purchases sent by your shortcut or HTTP client. Nothing here counts as spending until you record it.</p><Link className="text-button" href="/dashboard/settings#transaction-api">Set up API access</Link></>}
+  {setup ? <SettingsHeading icon="sms" title="Card SMS forwarding" badge="Inbox only" description={<>Send RCBC purchase messages from your shortcut to the <Link href="/dashboard/inbox">SMS inbox</Link>. Review them before recording an expense. No AI service is used.</>} /> : <><h2>SMS inbox</h2><p className="muted">Purchases sent by your shortcut or HTTP client. Nothing here counts as spending until you record it.</p><Link className="text-button" href="/dashboard/settings#transaction-api">Set up API access</Link></>}
   {error && <div role="alert" className="notice">{error}<button type="button" className="text-button" onClick={load}>Retry</button></div>}
   {!data && !error && <p role="status">Loading…</p>}
   {message && <p role="status" className="notice">{message}</p>}
@@ -39,8 +41,8 @@ function KeySetup({keys,accounts,onChanged,disabled=false}:{keys:Key[];accounts:
  }
  async function revoke(id:string){if(disabled)return;setBusy(true);setError('');try{await send('revoke-key',{id});setToken('');await onChanged();}catch(error){setError(error instanceof Error?error.message:'Could not revoke key.');}finally{setBusy(false);}}
  return <>
-  {keys.length>0 && <ul className="sms-keys">{keys.map(key=><li key={key.id}><div><strong>{key.label}</strong><span className="muted">{accounts.find(a=>a.id===key.account_id)?.name ?? 'Card'} · ending {key.last4} · {key.revoked_at?'Revoked':`Expires ${key.expires_at.slice(0,10)}`}</span></div>{!key.revoked_at && <button type="button" className="text-button" disabled={busy} onClick={()=>revoke(key.id)}>Revoke</button>}</li>)}</ul>}
-  <details className="inspector-section"><summary><span>Create an inbox key</span></summary>
+  {keys.length>0 && <div className="settings-key-list"><h3><ShieldCheck size={16} aria-hidden="true" />Access keys</h3><ul className="sms-keys">{keys.map(key=><li key={key.id}><div><strong>{key.label}</strong><span className="muted">{accounts.find(a=>a.id===key.account_id)?.name ?? 'Card'} · ending {key.last4} · {key.revoked_at?'Revoked':`Expires ${key.expires_at.slice(0,10)}`}</span></div>{!key.revoked_at && <button type="button" className="text-button" disabled={busy} onClick={()=>revoke(key.id)}>Revoke</button>}</li>)}</ul></div>}
+  <details className="inspector-section settings-disclosure"><summary><span className="settings-disclosure-label"><KeyRound size={17} aria-hidden="true" /><span>Create an inbox key<small>Allow a shortcut to submit messages for one card</small></span></span><ChevronDown size={18} aria-hidden="true" /></summary>
    <form className="workflow-form sms-key-form" onSubmit={create}>
     <p className="muted">This key can submit purchase messages for one card. It cannot read your ledger, record expenses, or move money. It expires after 90 days and can be revoked here.</p>
     <label className="workflow-field">Credit card<select required value={account} onChange={event=>setAccount(event.target.value)}><option value="">Choose a card</option>{accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
@@ -51,7 +53,7 @@ function KeySetup({keys,accounts,onChanged,disabled=false}:{keys:Key[];accounts:
   </details>
   {token && <div className="notice"><p>Save this key now. It is shown only once.</p><input aria-label="New API key" className="sms-secret" type="password" value={token} readOnly autoComplete="off"/><button type="button" className="text-button" onClick={async()=>{try{await navigator.clipboard.writeText(token);setCopied(true);}catch{setError('Select and copy the key manually.');}}}>{copied?'Copied':'Copy key'}</button><button type="button" className="text-button" onClick={()=>setToken('')}>I saved it</button></div>}
   {error && <p role="alert" className="notice">{error}</p>}
-  <details className="inspector-section"><summary><span>HTTP setup</span></summary><div className="inspector-section-content"><p className="muted">POST to <code>/api/v1/card-transactions</code> on this site. Send the key in <code>Authorization: Bearer YOUR_KEY</code>, JSON content type, and a UUID in <code>Idempotency-Key</code>. Keep the same UUID and body when retrying.</p><p className="muted">JSON fields: <code>sms</code> and <code>received_at</code> (the actual receipt timestamp including timezone). Only masked approved-purchase messages are supported. Never send a full card number, CVV, OTP or password.</p><p className="muted">Accepted submissions return <code>needs_review</code> and an inbox ID. Limits: 2,000 bytes per SMS, 10 new requests per minute and 100 per day per key.</p></div></details>
+  <details className="inspector-section settings-disclosure"><summary><span className="settings-disclosure-label"><Code2 size={17} aria-hidden="true" /><span>HTTP setup<small>Endpoint, request fields, and limits</small></span></span><ChevronDown size={18} aria-hidden="true" /></summary><div className="inspector-section-content"><h3>1. Send a request</h3><p className="muted">POST to <code>/api/v1/card-transactions</code> on this site. Send the key in <code>Authorization: Bearer YOUR_KEY</code>, JSON content type, and a UUID in <code>Idempotency-Key</code>. Keep the same UUID and body when retrying.</p><h3>2. Include the purchase message</h3><p className="muted">JSON fields: <code>sms</code> and <code>received_at</code> (the actual receipt timestamp including timezone). Only masked approved-purchase messages are supported. Never send a full card number, CVV, OTP or password.</p><h3>3. Review in Finance</h3><p className="muted">Accepted submissions return <code>needs_review</code> and an inbox ID. Limits: 2,000 bytes per SMS, 10 new requests per minute and 100 per day per key.</p></div></details>
  </>;
 }
 function ReceiptReview({receipt,categories,tags,account,onDone,disabled=false}:{receipt:Receipt;categories:Choice[];tags:Choice[];account:string;onDone:(message:string)=>Promise<void>;disabled?:boolean}) {

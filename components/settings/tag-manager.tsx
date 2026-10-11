@@ -1,4 +1,5 @@
 'use client';
+import { SettingsHeading } from './settings-heading';
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -12,5 +13,5 @@ export function TagManager({ tags, available }: { tags: {id:string;name:string}[
    setName('');router.refresh();
   } catch(e){setError(e instanceof Error?e.message:'Could not save.');}finally{setBusy(false);}
  }
- return <section className="surface"><h2>Tags</h2><p className="muted">A transaction can have several tags. Tags do not change its category or amount.</p>{!available?<p role="status">Tags could not load. Please try again shortly.</p>:<><div className="transaction-tags">{tags.map(tag=><span key={tag.id}>#{tag.name}</span>)}</div><form onSubmit={add} className="workflow-form"><label className="workflow-field">New tag<input value={name} onChange={e=>setName(e.target.value)} maxLength={60} required /></label><button className="solid-button" disabled={busy||!name.trim()}>{busy?'Saving…':'Add tag'}</button></form></>}{error&&<p role="alert">{error}</p>}</section>;
+ return <section className="surface"><SettingsHeading icon="tags" title="Tags" description="Add labels across categories. A transaction can have several tags without changing its amount." />{!available?<p role="status">Tags could not load. Please try again shortly.</p>:<><div className="transaction-tags">{tags.map(tag=><span key={tag.id}>#{tag.name}</span>)}</div><form onSubmit={add} className="workflow-form"><label className="workflow-field">New tag<input value={name} onChange={e=>setName(e.target.value)} maxLength={60} required /></label><button className="solid-button" disabled={busy||!name.trim()}>{busy?'Saving…':'Add tag'}</button></form></>}{error&&<p role="alert">{error}</p>}</section>;
 }

@@ -1,8 +1,9 @@
 'use client'
 
+import { SettingsHeading } from './settings-heading'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -44,8 +45,7 @@ export function ProfileSettings({ profile, userEmail }: ProfileSettingsProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Profile</CardTitle>
-        <CardDescription>Your personal information</CardDescription>
+        <SettingsHeading icon="profile" title="Profile" description="Your personal information." />
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">

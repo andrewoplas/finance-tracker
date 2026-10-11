@@ -1,8 +1,9 @@
 'use client'
 
+import { SettingsHeading } from './settings-heading'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -91,10 +92,9 @@ export function CategoryManager({ categories }: CategoryManagerProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="settings-category-header">
           <div>
-            <CardTitle>Categories</CardTitle>
-            <CardDescription>Manage your income and expense categories</CardDescription>
+            <SettingsHeading icon="categories" title="Categories" description="Group income and expenses by purpose." />
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>

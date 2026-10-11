@@ -1,5 +1,6 @@
 "use client";
 
+import { SettingsHeading } from "./settings-heading";
 import { useState } from "react";
 import { Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -56,8 +57,7 @@ export function TransactionExport({ userId }: { userId: string }) {
   }
 
   return <section className="surface" aria-labelledby="export-title">
-    <h2 id="export-title">Export transactions</h2>
-    <p className="muted">Download a CSV of your transactions for a report month.</p>
+    <SettingsHeading icon="export" id="export-title" title="Export transactions" description="Download a CSV of your transactions for a report month." />
     <form className="settings-export-form" onSubmit={download}>
       <label className="workflow-field">Report month<input type="month" value={month} onChange={event => setMonth(event.target.value)} required disabled={busy} /></label>
       <button className="solid-button" type="submit" disabled={busy || !monthOnly.safeParse(month).success}><Download size={16} aria-hidden="true" />{busy ? "Preparing…" : "Download CSV"}</button>

@@ -793,7 +793,56 @@ button:focus-visible,a:focus-visible,summary:focus-visible { outline:2px solid v
 .settings-page,.inbox-page { max-width:900px; }
 .settings-page .surface>.muted { margin:8px 0 18px; }
 .settings-page .workflow-form>.solid-button { align-self:flex-start; }
-.settings-page #transaction-api>.sms-workspace+.sms-workspace { margin-top:28px; padding-top:24px; border-top:1px solid var(--border); }
+.settings-page { display:flex; flex-direction:column; gap:28px; }
+.settings-nav { display:flex; flex-wrap:wrap; gap:8px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+.settings-nav a { padding:9px 14px; border:1px solid var(--border); border-radius:999px; font-size:13px; color:var(--muted-foreground); }
+.settings-nav a:hover { background:var(--muted); color:var(--foreground); }
+.settings-nav a:focus-visible,.settings-disclosure>summary:focus-visible { outline:2px solid var(--ring); outline-offset:4px; }
+.settings-group { display:flex; flex-direction:column; gap:16px; scroll-margin-top:24px; }
+.settings-group+.settings-group { padding-top:28px; border-top:1px solid var(--border); }
+.settings-group-heading h2 { font-size:16px; font-weight:650; }
+.settings-group-heading p { margin-top:5px; font-size:13px; color:var(--muted-foreground); }
+.settings-page .surface,.settings-page [data-slot=card] { border-radius:18px; box-shadow:none; }
+.settings-card-heading { display:flex; gap:14px; align-items:flex-start; margin-bottom:20px; }
+.settings-icon { display:grid; place-items:center; flex-shrink:0; width:42px; height:42px; border-radius:12px; background:var(--muted); color:var(--foreground); }
+.settings-card-heading>div { min-width:0; flex:1; }
+.settings-title-row { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; }
+.settings-card-heading h2 { font-size:16px; font-weight:600; line-height:1.5; }
+.settings-card-heading .muted { font-size:13px; line-height:1.65; margin-top:5px; color:var(--muted-foreground); }
+.settings-badge { display:inline-flex; padding:3px 8px; border:1px solid var(--border); border-radius:6px; font-size:10px; font-weight:550; color:var(--muted-foreground); white-space:nowrap; }
+.settings-page [data-slot=card-header] { border-bottom:1px solid var(--border); padding-bottom:20px; }
+.settings-page [data-slot=card-header] .settings-card-heading { margin-bottom:0; }
+.settings-category-header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.settings-link { display:inline-flex; align-items:center; gap:8px; }
+.settings-connection { gap:16px; scroll-margin-top:24px; }
+.settings-connection .settings-card-heading { margin-bottom:0; padding-bottom:20px; border-bottom:1px solid var(--border); }
+.settings-key-list h3 { display:flex; align-items:center; gap:8px; margin-bottom:12px; font-size:12px; font-weight:600; color:var(--muted-foreground); }
+.settings-connection .sms-keys li { padding:14px; border:1px solid var(--border); border-radius:10px; }
+.settings-connection .sms-keys li>div { min-width:0; overflow-wrap:anywhere; }
+.settings-connection .sms-keys strong { font-size:13px; font-weight:550; }
+.settings-connection .sms-keys .muted { margin-top:4px; color:var(--muted-foreground); }
+.settings-connection .sms-keys button { flex-shrink:0; font-size:12px; color:var(--destructive); min-height:36px; }
+.settings-disclosure { border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.settings-disclosure>summary { padding:14px 16px; min-height:64px; }
+.settings-disclosure>summary:hover { background:var(--muted); }
+.settings-disclosure>summary>.settings-disclosure-label { display:flex; align-items:center; gap:12px; flex-shrink:1; min-width:0; }
+.settings-disclosure-label>svg { flex-shrink:0; color:var(--muted-foreground); }
+.settings-disclosure-label small { display:block; font-size:12px; font-weight:400; color:var(--muted-foreground); margin-top:4px; }
+.settings-disclosure[open]>summary { border-bottom:1px solid var(--border); background:var(--muted); }
+.settings-disclosure .workflow-form,.settings-disclosure .inspector-section-content { padding:18px 16px; margin:0; }
+.settings-disclosure .muted { color:var(--muted-foreground); line-height:1.7; }
+.settings-disclosure .inspector-section-content h3 { font-size:13px; font-weight:600; }
+.settings-disclosure .inspector-section-content p+h3 { margin-top:12px; padding-top:16px; border-top:1px solid var(--border); }
+.settings-disclosure code { padding:2px 4px; border-radius:4px; background:var(--muted); color:var(--foreground); }
+.settings-connection a { text-decoration:underline; text-underline-offset:3px; }
+@media(max-width:480px) {
+ .settings-page { gap:24px; }
+ .settings-card-heading { gap:10px; }
+ .settings-icon { width:36px; height:36px; border-radius:10px; }
+ .settings-disclosure>summary { padding:12px; }
+ .settings-disclosure .workflow-form,.settings-disclosure .inspector-section-content { padding:16px 12px; }
+ .settings-category-header { flex-wrap:wrap; }
+}
 .account-menu-button,.transaction-menu-button { opacity:1; flex-shrink:0; }
 .recurring-row { display:flex; justify-content:space-between; align-items:center; gap:16px; }
 .recurring-description h3,.recurring-description p { overflow-wrap:anywhere; }

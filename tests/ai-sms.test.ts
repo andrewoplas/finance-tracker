@@ -137,11 +137,11 @@ test('date/time, currency, and exact positive amount are checked outside AI', ()
 test('OpenAI uses the cheap model and strict bounded output; incomplete and conflicting classifications fail closed', async () => {
   let output: unknown = purchase, status = 'completed';
   const client = { responses: { create: async (body: Record<string, unknown>) => {
-    assert.equal(body.model, 'gpt-5-nano');
+    assert.equal(body.model, 'gpt-6-luna');
     const sent = JSON.parse(body.input as string);
     assert.equal(sent.current_year, new Intl.DateTimeFormat('en', { timeZone: 'Asia/Manila', year: 'numeric' }).format(new Date()));
     assert.equal(body.store, false); assert.equal(body.max_output_tokens, 1000);
-    assert.deepEqual(body.reasoning, { effort: 'minimal' });
+    assert.deepEqual(body.reasoning, { effort: 'none' });
     assert.equal(body.tools, undefined);
     const text = body.text as { format: { strict: boolean } };
     assert.equal(text.format.strict, true);
@@ -216,3 +216,9 @@ test('different SMS texts get separate automatic IDs; invalid supplied IDs never
   assert.equal((await handler(malformed)).status, 400);
   assert.equal(parsed, 2);
 }));
+
+test('RCBC cafe purchase with a branch number and security footer passes independent validation', () => {
+  const sms = "Your transaction at WORKPLACE CAFE RAMOS 2 on 10/11 6:14PM for PHP655.00 using your Card ending in xxxx2004 is approved. If you don't recognize this transaction, call 0288881888 immediately. You can also lock your Card using the RCBC Pulz app to prevent unauthorized transactions.";
+  const extracted: Purchase = { kind: 'purchase', merchant: 'WORKPLACE CAFE RAMOS 2', amount: '655.00', currency: 'PHP', last4: '2004', date: '2026-10-11', time: '18:14' };
+  assert.equal(validPurchase(extracted, { sms }), true);
+});

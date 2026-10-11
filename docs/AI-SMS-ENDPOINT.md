@@ -19,7 +19,7 @@ No Codex worker or subscription login is needed. The existing regex-based
 OPENAI_API_KEY=<OpenAI-platform-key>
 FINANCE_SMS_HTTP_KEY=<32-or-more-random-secret-characters>
 FINANCE_DOT_SERVER_KEY=<existing-active-ft_quick_expense-key>
-FINANCE_SMS_MODEL=gpt-5-nano
+FINANCE_SMS_MODEL=gpt-6-luna
 FINANCE_SMS_CARD_MAPPINGS={"2004":{"account":"RCBC Flex Visa","category":"Spending"}}
 ```
 
@@ -29,14 +29,12 @@ Only the server holds the OpenAI and Finance write keys. The phone sends the
 separate HTTP bearer key. Revoking the underlying Finance credential disables
 parsing and replay as well as saving.
 
-GPT-5 nano has the lowest listed standard token rates among the models checked:
-$0.05/M input and $0.40/M output. It supports structured output but is deprecated
-with shutdown scheduled for December 11, 2026. Change `FINANCE_SMS_MODEL` to
-`gpt-6-luna` for its replacement ($0.10/M input, $0.50/M output). The implementation
-allows these two models and never silently falls back to a more expensive one.
-Sources: [GPT-5 nano](https://developers.openai.com/api/docs/models/gpt-5-nano),
-[deprecations](https://developers.openai.com/api/docs/deprecations),
-[Luna](https://developers.openai.com/api/docs/models/gpt-6-luna).
+GPT-6 Luna is the configured default, using the Responses API with strict
+structured output and reasoning effort `none` for focused SMS extraction.
+Its standard token rates are $0.10/M input and $0.50/M output.
+The implementation also accepts an explicitly configured `gpt-5-nano`, and
+never silently falls back to another model.
+Source: [GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna).
 
 ## Request
 
@@ -100,7 +98,7 @@ OpenAI, Finance or checkpoint storage is unavailable. A `persisted:false` error
 does not prove an uncertain commit failed; preserve the original request.
 
 Only the SMS, server current year, and optional receipt timestamp are sent to OpenAI, with `store:false`, strict
-JSON output, no tools, minimal reasoning, a 1,000-output-token limit, a 45-second
+JSON output, no tools, reasoning disabled for Luna, a 1,000-output-token limit, a 45-second
 timeout and SDK retries disabled. The raw SMS and credentials are not logged or
 stored in the checkpoint table. Derived fields and receipts are retained there
 for safe retries. No ledger history is fetched or sent to OpenAI.

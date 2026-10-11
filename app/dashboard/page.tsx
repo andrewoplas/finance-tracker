@@ -1,3 +1,4 @@
+import { isReportYear, loadYearReport } from "@/lib/finance/year-report";
 import { netWorth } from "@/lib/finance/net-worth";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -17,9 +18,10 @@ import {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; view?: string; filter?: string }>;
+  searchParams: Promise<{ year?: string; month?: string; view?: string; filter?: string }>;
 }) {
   const query = await searchParams;
+  const year = isReportYear(query.year) && (!query.view || query.view === "overview") ? query.year : undefined;
   const month = monthOnly.safeParse(query.month).success
     ? query.month!
     : manilaToday().slice(0, 7);
@@ -37,6 +39,26 @@ export default async function DashboardPage({
       data: { user },
     } = await db.auth.getUser();
     if (!user) throw new Error("Sign in to load your overview.");
+    if (year) {
+      const [categories, accounts, rows] = await Promise.all([
+        db.from("categories").select("id,name,type").eq("user_id", user.id),
+        db.from("accounts").select("id,name,balance,opening_balance,is_archived").eq("user_id", user.id).limit(1001),
+        loadYearReport(async offset => {
+          const result = await db.from("finance_report_rows")
+            .select("entry", { count: offset === 0 ? "exact" : undefined })
+            .eq("user_id", user.id).gte("report_month", `${year}-01`).lte("report_month", `${year}-12`)
+            .order("report_month").order("entry->>id").range(offset, offset + 999);
+          return { rows: (result.data ?? []).map(row => row.entry) as LedgerEntry[], count: result.count, error: !!result.error };
+        }),
+      ]);
+      if (categories.error || accounts.error || !accounts.data || accounts.data.length > 1000) throw new Error("The yearly overview could not load completely.");
+      data.transactionCategories = categories.data ?? [];
+      data.reportEntries = rows;
+      data.accounts = accounts.data.map(({ id, name }) => ({ id, name }));
+      data.netWorth = netWorth(accounts.data);
+      return <MonthlyOverview key={year} year={year} month={month} data={data} />;
+    }
+
     const [
       transactions,
       categories,
@@ -165,5 +187,5 @@ export default async function DashboardPage({
     data.error =
       error instanceof Error ? error.message : "Could not load overview.";
   }
-  return <MonthlyOverview key={month} view={["overview", "transactions", "analysis", "reflection"].includes(query.view ?? "") ? query.view : "overview"} initialFilter={query.filter} month={month} data={data} />;
+  return <MonthlyOverview year={year} key={year ?? month} view={["overview", "transactions", "analysis", "reflection"].includes(query.view ?? "") ? query.view : "overview"} initialFilter={query.filter} month={month} data={data} />;
 }

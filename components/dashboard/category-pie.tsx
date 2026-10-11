@@ -23,9 +23,9 @@ export function CategoryPie({ title, total, rows, names, selectedCategory, onSel
   return <section className="category-pie-card" aria-label={title}>
     <h3>{title}</h3>
     <div className="category-pie-total">{money(total)}</div>
-    {total > 0 ? <>
+    {total > 0 ? <div className="category-pie-body">
       <div className="category-pie-visual" role="img" aria-label={`${title}: ${money(total)}, split by category. Amounts and percentages listed below.`} style={{ background: `conic-gradient(${gradient})` }} />
-      <p className="insight-help">{onSelect ? "Choose a category to open its purchases." : "By income category"}</p>
+      <div className="category-pie-key">
       <ul className="category-pie-legend">
         {(showAll ? slices : slices.slice(0, 5)).map(slice => {
           const content = <><i style={{ background: slice.color }} aria-hidden="true" /><span>{names.get(slice.id ?? "") ?? "Uncategorized"}</span><strong>{money(slice.amount)}</strong><small>{Math.round(slice.amount / total * 100)}%</small></>;
@@ -33,6 +33,7 @@ export function CategoryPie({ title, total, rows, names, selectedCategory, onSel
         })}
       </ul>
       {slices.length > 5 && <button type="button" className="text-button" aria-expanded={showAll} onClick={() => setShowAll(value => !value)}>{showAll ? "Show top 5" : `Show all ${slices.length} categories`}</button>}
-    </> : <div className="category-pie-empty"><div className="category-pie-visual" aria-hidden="true" /><p className="insight-help">No {onSelect ? "expenses" : "income"} recorded for this month.</p></div>}
+      </div>
+    </div> : <div className="category-pie-empty"><div className="category-pie-visual" aria-hidden="true" /><p className="insight-help">No {onSelect ? "expenses" : "income"} recorded for this period.</p></div>}
   </section>;
 }

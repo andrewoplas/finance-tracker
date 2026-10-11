@@ -1,5 +1,6 @@
 import { MonthlyOverview } from "@/components/dashboard/monthly-overview";
 import { demoEntries, demoCategories } from "@/lib/finance/demo";
+import { isReportYear } from "@/lib/finance/year-report";
 import { monthOnly } from "@/lib/finance/core";
 import Link from "next/link";
 import {
@@ -11,9 +12,10 @@ import {
 export default async function DemoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; view?: string; filter?: string }>;
+  searchParams: Promise<{ year?: string; month?: string; view?: string; filter?: string }>;
 }) {
   const query = await searchParams;
+  const year = isReportYear(query.year) && (!query.view || query.view === "overview") ? query.year : undefined;
   const month = monthOnly.safeParse(query.month).success
     ? query.month!
     : "2026-10";
@@ -32,12 +34,13 @@ export default async function DemoPage({
       </aside>
       <main>
         <MonthlyOverview
-          key={month} view={["overview", "transactions", "analysis", "reflection"].includes(query.view ?? "") ? query.view : "overview"} initialFilter={query.filter}
+          year={year} key={year ?? month} view={["overview", "transactions", "analysis", "reflection"].includes(query.view ?? "") ? query.view : "overview"} initialFilter={query.filter}
           demo
           month={month}
           data={{
             netWorth: { status: "ready", assets: 5500000, debts: 1200000, total: 4300000, accountCount: 2, unknownCount: 0 },
             entries: demoEntries(month),
+            reportEntries: year ? Array.from({ length: 12 }, (_, i) => demoEntries(`${year}-${String(i + 1).padStart(2, "0")}`).map(entry => ({ ...entry, id: `${entry.id}-${i}` }))).flat() : undefined,
             categories: demoCategories,
             accounts: [
               {

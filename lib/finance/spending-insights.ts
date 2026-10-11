@@ -2,8 +2,9 @@ import { minor, type LedgerEntry } from "./core";
 
 // One pass over report rows; keep report-month adjustments out of the daily timeline.
 export function spendingInsights(entries: LedgerEntry[], month: string, today: string) {
-  const dayCount = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0)).getUTCDate();
-  const elapsed = month < today.slice(0, 7) ? dayCount : month === today.slice(0, 7) ? Number(today.slice(8, 10)) : 0;
+  const annual = month.length === 4;
+  const dayCount = annual ? 12 : new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0)).getUTCDate();
+  const elapsed = annual ? (month < today.slice(0, 4) ? 12 : month === today.slice(0, 4) ? Number(today.slice(5, 7)) : 0) : month < today.slice(0, 7) ? dayCount : month === today.slice(0, 7) ? Number(today.slice(8, 10)) : 0;
   const amounts = Array<number>(dayCount).fill(0);
   const incomeAmounts = Array<number>(dayCount).fill(0);
   const categories = new Map<string | null, number>();
@@ -12,7 +13,7 @@ export function spendingInsights(entries: LedgerEntry[], month: string, today: s
   let total = 0, outsideDates = 0, future = 0;
   let income = 0, incomeOutsideDates = 0, incomeFuture = 0, collected = 0;
   for (const entry of entries) {
-    if (entry.report_month !== month || entry.reversed_at) continue;
+    if ((annual ? !entry.report_month.startsWith(`${month}-`) : entry.report_month !== month) || entry.reversed_at) continue;
     // Reimbursement collections are shown separately, never as earned income.
     if (entry.report_kind === "collection") { collected += minor(entry.amount); continue; }
     if (entry.type !== "expense" && entry.type !== "income") continue;
@@ -24,12 +25,12 @@ export function spendingInsights(entries: LedgerEntry[], month: string, today: s
     categoryTotals.set(entry.category_id, (categoryTotals.get(entry.category_id) ?? 0) + amount);
     const date = entry.report_kind === "installment" ? entry.bill_date ?? entry.date : entry.date;
     if (!isIncome) purchases.push({ entry, amount, date });
-    if (date.slice(0, 7) !== month) {
+    if (!annual && date.slice(0, 7) !== month) {
       if (isIncome) incomeOutsideDates += amount;
       else outsideDates += amount;
       continue;
     }
-    const day = Number(date.slice(8, 10));
+    const day = annual ? Number(entry.report_month.slice(5, 7)) : Number(date.slice(8, 10));
     (isIncome ? incomeAmounts : amounts)[day - 1] += amount;
     if (day > elapsed) {
       if (isIncome) incomeFuture += amount;

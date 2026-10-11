@@ -64,12 +64,14 @@ const monthName = (month: string) =>
 
 export function MonthlyOverview({
   month,
+  year,
   data,
   demo = false,
   view: initialView = "overview",
   initialFilter = "all",
 }: {
   month: string;
+  year?: string;
   data: OverviewData;
   demo?: boolean;
   view?: string;
@@ -171,7 +173,7 @@ export function MonthlyOverview({
       )}
       <header className="overview-header">
         <h1>{view === "transactions" ? "Transactions" : view === "analysis" ? "Planning" : view === "reflection" ? "Monthly reflection" : "Overview"}</h1>
-        <PeriodPicker month={month} />
+        <PeriodPicker month={month} selectedYear={year} allowYear={view === "overview"} />
       </header>
       {view === "analysis" && <PlanningTabs demo={demo} />}
       {view === "transactions" && !demo && <TransactionTools entries={entries} accounts={data.accounts} categories={transactionCategories} />}
@@ -192,7 +194,7 @@ export function MonthlyOverview({
           <h2>Your overview couldn’t load</h2>
           <p>{data.error}</p>
           <p>We haven’t replaced your ledger with zero balances.</p>
-          <a className="solid-button" href={`${base}?month=${month}`}>
+          <a className="solid-button" href={year ? `${base}?year=${year}` : `${base}?month=${month}`}>
             Try again
           </a>
         </section>
@@ -204,8 +206,8 @@ export function MonthlyOverview({
             </div>
           )}
           {view === "overview" && <>
-            <SpendingInsights netWorth={data.netWorth} accountsHref={demo ? "/login" : "/dashboard/accounts"} entries={reportEntries} month={month} today={manilaToday()} budget={budget} categories={transactionCategories} planHref={demo ? `/demo?month=${month}&view=analysis` : `/dashboard/budgets?month=${month}`} />
-            <MonthlyLink loadedMonth={month} className="review-link" href={route("transactions", "pending")}><span>Needs review · includes attribution</span><span><b className="review-count">{pending.length}</b><ChevronRight size={16}/></span></MonthlyLink>
+            <SpendingInsights year={year} netWorth={data.netWorth} accountsHref={demo ? "/login" : "/dashboard/accounts"} entries={reportEntries} month={month} today={manilaToday()} budget={budget} categories={transactionCategories} planHref={demo ? `/demo?month=${month}&view=analysis` : `/dashboard/budgets?month=${month}`} />
+            {!year && <MonthlyLink loadedMonth={month} className="review-link" href={route("transactions", "pending")}><span>Needs review · includes attribution</span><span><b className="review-count">{pending.length}</b><ChevronRight size={16}/></span></MonthlyLink>}
           </>}
           {view === "analysis" && <div className="analysis-view">
             <section className="surface categories-panel">
@@ -309,8 +311,8 @@ export function MonthlyOverview({
 
             </section>
           </div>}
-          {view === "overview" && <button type="button" className="text-button overview-recent-toggle" aria-expanded={showRecent} aria-controls="activity" onClick={() => setShowRecent(value => !value)}>{showRecent ? "Hide recent transactions" : "Show recent transactions"}<ChevronDown size={16} aria-hidden="true" /></button>}
-          {(view === "transactions" || (view === "overview" && showRecent)) && <section className="surface activity-panel" id="activity">
+          {view === "overview" && !year && <button type="button" className="text-button overview-recent-toggle" aria-expanded={showRecent} aria-controls="activity" onClick={() => setShowRecent(value => !value)}>{showRecent ? "Hide recent transactions" : "Show recent transactions"}<ChevronDown size={16} aria-hidden="true" /></button>}
+          {(view === "transactions" || (view === "overview" && !year && showRecent)) && <section className="surface activity-panel" id="activity">
             <div className="section-heading">
               <div>
                 <h2>{view === "overview" ? "Recent transactions" : filter === "pending" ? "Needs review" : "Transactions"}</h2>

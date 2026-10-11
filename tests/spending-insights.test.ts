@@ -87,3 +87,23 @@ test("income-only, spending-only, and future months preserve zero and negative c
   assert.equal(empty.incomeMinusSpending, 0);
   assert.deepEqual(empty.incomeCategories, []);
 });
+
+test("purchase details rank valid expenses and preserve report dates without inventing purchases", () => {
+  const entries = [
+    row({ id: "small", amount: "2.50", category_id: null }),
+    row({ id: "bill", amount: "500", report_kind: "installment", date: "2026-08-01", bill_date: "2026-10-15" }),
+    row({ id: "assigned", amount: "100", date: "2026-09-30" }),
+    row({ id: "income", type: "income", amount: "9000" }),
+    row({ id: "transfer", type: "transfer", amount: "9000" }),
+    row({ id: "collection", report_kind: "collection", amount: "9000" }),
+    row({ id: "reversed", reversed_at: "2026-10-05", amount: "9000" }),
+    row({ id: "other-month", report_month: "2026-09", amount: "9000" }),
+  ];
+  const result = spendingInsights(entries, "2026-10", "2026-10-11");
+  assert.deepEqual(result.purchases.map(purchase => purchase.entry.id), ["bill", "assigned", "small"]);
+  assert.equal(result.purchases[0].date, "2026-10-15");
+  assert.equal(result.purchases[1].date, "2026-09-30");
+  assert.equal(result.purchases[2].entry.category_id, null);
+  assert.equal(result.purchases.reduce((sum, purchase) => sum + purchase.amount, 0), result.total);
+  assert.equal(result.purchases[0].entry, entries[1]);
+});

@@ -2,44 +2,38 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Area, Bar, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import dynamic from "next/dynamic";
 import { spendingInsights } from "@/lib/finance/spending-insights";
 import type { LedgerEntry } from "@/lib/finance/core";
 
+const MonthlyComparisonChart = dynamic(() => import("./monthly-comparison-chart"), {
+  loading: () => <p className="insight-help">Loading comparison…</p>,
+});
 const money = (value: number) => new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(value / 100);
-const compactMoney = (value: number) => new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", notation: "compact", maximumFractionDigits: 1 }).format(value / 100);
-
-function CategoryBreakdown({ title, kind, rows, total, names }: {
-  title: string; kind: "income" | "spending";
-  rows: { id: string | null; amount: number }[]; total: number; names: Map<string, string>;
-}) {
-  const [showAll, setShowAll] = useState(false);
-  return <section className={`insight-categories insight-categories-${kind}`} aria-label={title}>
-    <div className="section-heading"><h3>{title}</h3><span className="insight-help">Share of this month’s {kind}</span></div>
-    {!rows.length ? <p className="empty-copy">No {kind} recorded for this month.</p> : <>
-      <p className="insight-help">{names.get(rows[0].id ?? "") ?? "Uncategorized"} accounts for {Math.round(rows[0].amount / total * 100)}% of {kind}.</p>
-      <ul className="insight-category-list">
-        {(showAll ? rows : rows.slice(0, 5)).map(category => <li key={category.id ?? "uncategorized"}>
-          <div><span>{names.get(category.id ?? "") ?? "Uncategorized"}</span><span><strong>{money(category.amount)}</strong><small>{Math.round(category.amount / total * 100)}%</small></span></div>
-          <div className="insight-category-track" aria-hidden="true"><span style={{ width: `${category.amount / total * 100}%` }} /></div>
-        </li>)}
-      </ul>
-      {rows.length > 5 && <button type="button" className="text-button" aria-expanded={showAll} onClick={() => setShowAll(value => !value)}>{showAll ? "Show top 5" : `Show all ${rows.length} categories`}</button>}
-    </>}
-  </section>;
-}
+const dateLabel = (value: string) => new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
 
 export function SpendingInsights({ entries, month, today, budget, categories, planHref }: {
   entries: LedgerEntry[]; month: string; today: string; budget: number;
   categories: { id: string; name: string }[]; planHref: string;
 }) {
-  const [mode, setMode] = useState<"cumulative" | "daily">("cumulative");
+  const [showCategories, setShowCategories] = useState(false);
+  const [showPurchases, setShowPurchases] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [filter, setFilter] = useState<{ kind: "category"; id: string | null } | { kind: "day"; date: string } | null>(null);
   const insights = useMemo(() => spendingInsights(entries, month, today), [entries, month, today]);
   const names = new Map(categories.map(category => [category.id, category.name]));
-  const points = insights.days.map(day => ({ ...day, plan: Math.round(budget * day.day / insights.dayCount) }));
+  const categoryName = (id: string | null) => names.get(id ?? "") ?? "Uncategorized";
   const monthLabel = new Intl.DateTimeFormat("en-PH", { month: "short", timeZone: "UTC" }).format(new Date(`${month}-01T00:00:00Z`));
   const remaining = budget - insights.total;
   const throughLabel = insights.elapsed ? `${monthLabel} ${insights.elapsed}` : "month start";
+  const purchases = insights.purchases.filter(purchase => !filter || (filter.kind === "category" ? purchase.entry.category_id === filter.id : purchase.date === filter.date));
+  const purchaseTitle = !filter ? "Biggest expenses" : filter.kind === "category" ? `${categoryName(filter.id)} expenses` : `Expenses on ${dateLabel(filter.date)}`;
+  const elapsedDays = insights.days.slice(0, insights.elapsed);
+  const largestDay = Math.max(...elapsedDays.map(day => day.amount), 1);
+  function chooseFilter(next: typeof filter) {
+    setFilter(next);
+    setShowPurchases(false);
+  }
 
   return <section className="surface spending-hero insights-panel" aria-label="Income and spending insights">
     <h2 className="insight-overview-title">Your month at a glance</h2>
@@ -47,60 +41,66 @@ export function SpendingInsights({ entries, month, today, budget, categories, pl
     <div className="insight-totals">
       <div><h3>Income</h3><strong className="insight-income">{money(insights.income)}</strong><small>Earned income</small></div>
       <div><h3>Spending</h3><strong className="insight-expense">{money(insights.total)}</strong><small>Transfers excluded</small></div>
-      <div><h3>Income − spending</h3><strong className={insights.incomeMinusSpending < 0 ? "insight-expense" : "insight-income"}>{money(insights.incomeMinusSpending)}</strong><small>{insights.incomeMinusSpending < 0 ? "Spending exceeds income" : insights.incomeMinusSpending > 0 ? "Income exceeds spending" : "Income and spending are equal"}</small></div>
+      <div><h3>Income − spending</h3><strong className={insights.incomeMinusSpending < 0 ? "insight-expense" : "insight-income"}>{money(insights.incomeMinusSpending)}</strong><small>Not your account balance</small></div>
     </div>
-    <p className="insight-help">Income − spending is a report comparison, not your account balance. Reimbursements collected: {money(insights.collected)} (separate from earned income).</p>
-    <div className="insight-plan"><span>Monthly spending plan</span><strong>{budget ? money(budget) : "Not set"}</strong><span>{budget ? `${money(Math.abs(remaining))} ${remaining < 0 ? "over plan" : "remaining"}` : <Link href={planHref}>Set a spending plan →</Link>}</span></div>
+    <p className="insight-takeaway">{insights.income > 0 ? `Spending is ${Math.round(insights.total / insights.income * 100)}% of recorded income.` : insights.total > 0 ? "You have recorded expenses, but no income for this month yet." : "Add income and expenses to see your month take shape."}</p>
 
-    <div className="insight-chart-heading"><h3>Income vs. spending</h3><div className="chart-switch" role="group" aria-label="Income and spending chart view">
-      <button type="button" aria-pressed={mode === "cumulative"} onClick={() => setMode("cumulative")}>Cumulative</button>
-      <button type="button" aria-pressed={mode === "daily"} onClick={() => setMode("daily")}>Daily</button>
-    </div></div>
-    <p className="insight-help">{mode === "cumulative" ? "Compare how income and spending add up over the month." : "Compare income and spending side by side each day."} Dated through {throughLabel}.</p>
-    <div className="insight-legend" aria-label="Chart legend">
-      <span><i className="insight-income-key" />Income</span>
-      <span><i className="insight-expense-key" />Spending</span>
-      {budget > 0 && mode === "cumulative" && <span><i className="insight-plan-key" />Spending plan · spread evenly</span>}
+    <div className="insight-main-view">
+      <section className="insight-categories insight-categories-spending" aria-label="Spending categories">
+        <div className="section-heading"><h3>Where your money went</h3></div>
+        <p className="insight-help">Choose a category to see its expenses.</p>
+        {!insights.categories.length ? <p className="empty-copy">No expenses recorded for this month.</p> : <>
+          <ul className="insight-category-list">
+            {(showCategories ? insights.categories : insights.categories.slice(0, 5)).map(category => <li key={category.id ?? "uncategorized"}>
+              <button type="button" className="insight-category-button" aria-pressed={filter?.kind === "category" && filter.id === category.id} aria-controls="overview-purchases" onClick={() => chooseFilter(filter?.kind === "category" && filter.id === category.id ? null : { kind: "category", id: category.id })}>
+                <span className="insight-category-label"><span>{categoryName(category.id)}</span><span><strong>{money(category.amount)}</strong><small>{Math.round(category.amount / insights.total * 100)}%</small></span></span>
+                <span className="insight-category-track" aria-hidden="true"><span style={{ width: `${category.amount / insights.total * 100}%` }} /></span>
+              </button>
+            </li>)}
+          </ul>
+          {insights.categories.length > 5 && <button type="button" className="text-button" aria-expanded={showCategories} onClick={() => setShowCategories(value => !value)}>{showCategories ? "Show top 5" : `Show all ${insights.categories.length} categories`}</button>}
+        </>}
+      </section>
+      <section className="insight-purchases" id="overview-purchases" aria-label="Expense details">
+        <div className="section-heading"><h3>{purchaseTitle}</h3>{filter && <button type="button" className="text-button" onClick={() => chooseFilter(null)}>Clear filter</button>}</div>
+        <p className="insight-help" role="status">{purchases.length} {purchases.length === 1 ? "expense" : "expenses"}{filter ? ` · ${money(purchases.reduce((sum, purchase) => sum + purchase.amount, 0))}` : " · Largest amounts first"}</p>
+        <ul className="insight-purchase-list">
+          {(showPurchases ? purchases : purchases.slice(0, 5)).map(({ entry, amount, date }) => <li key={`${entry.report_kind ?? "transaction"}:${entry.id}`}>
+            <div><strong>{entry.description}</strong><small>{categoryName(entry.category_id)} · {dateLabel(date)}{entry.report_kind === "installment" ? " · Installment bill" : ""}{date > today ? " · Future-dated" : ""}{date.slice(0, 7) !== month ? " · Assigned to this month" : ""}</small></div>
+            <strong>{money(amount)}</strong>
+          </li>)}
+        </ul>
+        {!purchases.length && <p className="empty-copy">{filter ? "No expenses match this selection." : "Your purchases will appear here as you add expenses."}</p>}
+        {purchases.length > 5 && <button type="button" className="text-button" aria-expanded={showPurchases} onClick={() => setShowPurchases(value => !value)}>{showPurchases ? "Show top 5" : `Show all ${purchases.length} expenses`}</button>}
+      </section>
     </div>
-    <div className="insight-chart" role="region" aria-label={`${mode} income and spending in Philippine pesos. Use arrow keys to explore the chart.`}>
-      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-        <ComposedChart data={points} margin={{ top: 20, right: 16, bottom: 0, left: 0 }} accessibilityLayer>
-          <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 5" />
-          <XAxis dataKey="day" type="number" domain={[1, insights.dayCount]} padding={{ left: 12, right: 12 }} ticks={[1, 8, 15, 22, insights.dayCount]} tickFormatter={day => `${monthLabel} ${day}`} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickLine={false} axisLine={false} minTickGap={20} />
-          <YAxis tickFormatter={compactMoney} width={65} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickLine={false} axisLine={false} domain={[0, "auto"]} />
-          <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, color: "var(--foreground)" }} labelFormatter={day => `${monthLabel} ${day}`} formatter={(value, name) => [money(Number(value)), name]} />
-          {mode === "cumulative" ? <>
-            <Area name="Spending" type="stepAfter" dataKey="actual" stroke="var(--expense)" fill="var(--expense)" fillOpacity={0.08} strokeWidth={2} dot={{ r: 2, fill: "var(--expense)", strokeWidth: 0 }} isAnimationActive={false} connectNulls={false} />
-            <Line name="Income" type="stepAfter" dataKey="actualIncome" stroke="var(--income)" strokeWidth={3} dot={{ r: 2, fill: "var(--income)", strokeWidth: 0 }} isAnimationActive={false} connectNulls={false} />
-          </> : <>
-            <Bar name="Income" dataKey="dailyIncome" fill="var(--income)" radius={[3, 3, 0, 0]} maxBarSize={16} isAnimationActive={false} />
-            <Bar name="Spending" dataKey="daily" fill="var(--expense)" radius={[3, 3, 0, 0]} maxBarSize={16} isAnimationActive={false} />
-          </>}
-          {budget > 0 && mode === "cumulative" && <Line name="Even daily spending plan" dataKey="plan" stroke="var(--muted-foreground)" strokeDasharray="5 5" dot={false} strokeWidth={1.5} isAnimationActive={false} />}
-          {insights.elapsed > 0 && insights.elapsed < insights.dayCount && <ReferenceLine x={insights.elapsed} stroke="var(--muted-foreground)" strokeDasharray="3 3" label={{ value: "Today", position: "insideTopRight", fill: "var(--muted-foreground)", fontSize: 11 }} />}
-        </ComposedChart>
-      </ResponsiveContainer>
+
+    <section className="insight-daily" aria-label="Daily expenses">
+      <div className="section-heading"><h3>When you spent</h3><span className="insight-help">Through {throughLabel}</span></div>
+      <p className="insight-help">Choose a day to see its expenses above. Bar height shows the amount spent that day.</p>
+      {insights.elapsed ? <>
+        <p className="insight-help">Largest day: {money(Math.max(...elapsedDays.map(day => day.amount)))}</p>
+        <div className="insight-day-bars" role="group" aria-label="Choose a spending day">
+          {elapsedDays.map(day => {
+            const date = `${month}-${String(day.day).padStart(2, "0")}`;
+            return <button type="button" key={day.day} title={`${dateLabel(date)}: ${money(day.amount)}`} aria-label={`${dateLabel(date)}: ${money(day.amount)}. Show expenses.`} aria-pressed={filter?.kind === "day" && filter.date === date} aria-controls="overview-purchases" onClick={() => chooseFilter(filter?.kind === "day" && filter.date === date ? null : { kind: "day", date })}>
+              <span className="insight-day-column"><span style={{ height: `${day.amount / largestDay * 100}%`, minHeight: day.amount > 0 ? 3 : 0 }} /></span><span>{day.day}</span>
+            </button>;
+          })}
+        </div>
+        <p className="insight-help">{monthLabel} · {money(insights.datedToDate)} spent through {throughLabel}</p>
+      </> : <p className="empty-copy">Daily spending will appear when this month starts.</p>}
+      {(insights.future > 0 || insights.outsideDates > 0) && <p className="chart-caption">The monthly total also includes {insights.future > 0 ? `${money(insights.future)} dated later` : ""}{insights.future > 0 && insights.outsideDates > 0 ? " and " : ""}{insights.outsideDates > 0 ? `${money(insights.outsideDates)} assigned from other months` : ""}. These appear in the expense list, but not the daily bars. Installments use their bill date.</p>}
+    </section>
+
+    <details className="insight-income-details"><summary>Income sources · {money(insights.income)}</summary>
+      {insights.incomeCategories.length ? <ul className="insight-income-list">{insights.incomeCategories.map(category => <li key={category.id ?? "uncategorized"}><span>{categoryName(category.id)}</span><strong>{money(category.amount)}</strong></li>)}</ul> : <p className="empty-copy">No earned income recorded for this month.</p>}
+      <p className="insight-help">Reimbursements collected: {money(insights.collected)}. These are separate from earned income.</p>
+    </details>
+    <div className="insight-plan"><span>Monthly spending plan</span><strong>{budget ? money(budget) : "Not set"}</strong><span>{budget ? `${money(Math.abs(remaining))} ${remaining < 0 ? "over plan" : "remaining"}` : <Link href={planHref}>Set a spending plan →</Link>}</span></div>
+    <div className="insight-comparison">
+      <button type="button" className="text-button" aria-expanded={showComparison} aria-controls="overview-cumulative" onClick={() => setShowComparison(value => !value)}>{showComparison ? "Hide cumulative comparison" : "Show cumulative income vs. spending"}</button>
+      <div id="overview-cumulative">{showComparison && <MonthlyComparisonChart insights={insights} budget={budget} monthLabel={monthLabel} throughLabel={throughLabel} />}</div>
     </div>
-    <div className="insight-stats">
-      <div><span>Income through {throughLabel}</span><strong>{money(insights.incomeToDate)}</strong></div>
-      <div><span>Spending through {throughLabel}</span><strong>{money(insights.datedToDate)}</strong></div>
-      <div><span>Income − spending through {throughLabel}</span><strong>{money(insights.incomeToDate - insights.datedToDate)}</strong></div>
-    </div>
-    {!insights.datedToDate && !insights.incomeToDate && <p className="insight-help">No dated income or spending recorded through {throughLabel}.</p>}
-    <p className="chart-caption">Transfers and reimbursement collections are excluded from the chart. Installments use their bill date.
-      {(insights.future > 0 || insights.incomeFuture > 0) && ` Future-dated entries (${money(insights.incomeFuture)} income, ${money(insights.future)} spending) are included in monthly totals, but not the chart yet.`}
-      {(insights.outsideDates > 0 || insights.incomeOutsideDates > 0) && ` Entries assigned from other months (${money(insights.incomeOutsideDates)} income, ${money(insights.outsideDates)} spending) are included in totals and categories, but not this daily chart.`}
-    </p>
-    <div className="insight-breakdowns">
-      <CategoryBreakdown title="Where income came from" kind="income" rows={insights.incomeCategories} total={insights.income} names={names} />
-      <CategoryBreakdown title="Where spending went" kind="spending" rows={insights.categories} total={insights.total} names={names} />
-    </div>
-    <details className="insight-table"><summary>View daily amounts</summary><div className="report-table-wrap">
-      <table className="report-table">
-        <caption className="sr-only">Daily income and spending, including future dated entries. Reimbursement collections excluded.</caption>
-        <thead><tr><th scope="col">Date</th><th scope="col">Income</th><th scope="col">Spending</th><th scope="col">Income − spending</th><th scope="col">Cumulative income</th><th scope="col">Cumulative spending</th></tr></thead>
-        <tbody>{insights.days.map(day => <tr key={day.day}><th scope="row">{monthLabel} {day.day}{day.day > insights.elapsed ? " · Future" : ""}</th><td>{money(day.income)}</td><td>{money(day.amount)}</td><td>{money(day.income - day.amount)}</td><td>{money(day.cumulativeIncome)}</td><td>{money(day.cumulative)}</td></tr>)}</tbody>
-      </table>
-    </div></details>
   </section>;
 }

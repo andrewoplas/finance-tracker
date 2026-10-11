@@ -7,6 +7,7 @@ export function spendingInsights(entries: LedgerEntry[], month: string, today: s
   const amounts = Array<number>(dayCount).fill(0);
   const incomeAmounts = Array<number>(dayCount).fill(0);
   const categories = new Map<string | null, number>();
+  const purchases: { entry: LedgerEntry; amount: number; date: string }[] = [];
   const incomeCategories = new Map<string | null, number>();
   let total = 0, outsideDates = 0, future = 0;
   let income = 0, incomeOutsideDates = 0, incomeFuture = 0, collected = 0;
@@ -22,6 +23,7 @@ export function spendingInsights(entries: LedgerEntry[], month: string, today: s
     else total += amount;
     categoryTotals.set(entry.category_id, (categoryTotals.get(entry.category_id) ?? 0) + amount);
     const date = entry.report_kind === "installment" ? entry.bill_date ?? entry.date : entry.date;
+    if (!isIncome) purchases.push({ entry, amount, date });
     if (date.slice(0, 7) !== month) {
       if (isIncome) incomeOutsideDates += amount;
       else outsideDates += amount;
@@ -54,6 +56,7 @@ export function spendingInsights(entries: LedgerEntry[], month: string, today: s
     income, incomeOutsideDates, incomeFuture, collected, incomeMinusSpending: income - total,
     datedToDate: amounts.slice(0, elapsed).reduce((sum, value) => sum + value, 0),
     incomeToDate: incomeAmounts.slice(0, elapsed).reduce((sum, value) => sum + value, 0),
+    purchases: purchases.sort((a, b) => b.amount - a.amount || b.date.localeCompare(a.date) || a.entry.id.localeCompare(b.entry.id)),
     categories: ranked(categories), incomeCategories: ranked(incomeCategories),
   };
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { SpendingInsights } from "./spending-insights";
 import { PlanningTabs } from "@/components/layout/planning-tabs";
 import { TransactionTools } from "@/components/transactions/transaction-tools";
 import { MonthlyLink } from "./monthly-link";
@@ -18,7 +19,7 @@ import {
   CircleHelp,
   X,
 } from "lucide-react";
-import { monthlyReport, minor, type LedgerEntry } from "@/lib/finance/core";
+import { minor, manilaToday, type LedgerEntry } from "@/lib/finance/core";
 import {
   Dialog,
   DialogContent,
@@ -102,10 +103,6 @@ export function MonthlyOverview({
     return () => window.removeEventListener("finance-demo-entry", added);
   }, [demo, month]);
   const reportEntries = data.reportEntries ?? entries;
-  const report = useMemo(
-    () => monthlyReport(reportEntries, month),
-    [reportEntries, month],
-  );
   const budget = data.categories.reduce((n, c) => n + minor(c.amount), 0);
   const pending = entries.filter((t) => t.review_status === "pending");
   const spendingCategories = data.categories.map((c) => ({
@@ -138,22 +135,6 @@ export function MonthlyOverview({
       setBusy(false);
     }
   }
-  const dayCount = new Date(
-    Number(month.slice(0, 4)),
-    Number(month.slice(5)),
-    0,
-  ).getDate();
-  const daily = Array.from({ length: dayCount }, (_, i) =>
-    reportEntries
-      .filter((t) => {
-        const date =
-          t.report_kind === "installment" ? (t.bill_date ?? t.date) : t.date;
-        const day = date.slice(0, 7) === month ? Number(date.slice(-2)) : 1;
-        return t.type === "expense" && day <= i + 1;
-      })
-      .reduce((n, t) => n + minor(t.amount), 0),
-  );
-  const max = Math.max(budget, report.spending, 1);
   const transactionCategories = data.transactionCategories ?? data.categories;
   const accountNames = new Map(data.accounts.map(a => [a.id, a.name]));
   const categoryNames = new Map(transactionCategories.map(c => [c.id, c.name]));
@@ -220,62 +201,7 @@ export function MonthlyOverview({
             </div>
           )}
           {view === "overview" && <>
-            <section className="surface spending-hero">
-              <div className="summary-heading"><div><h2>Spending this month</h2><div className="hero-amount">{money(report.spending)}</div></div><div className="summary-reference"><span>Monthly plan</span><strong>{budget ? money(budget) : "Not set"}</strong><small>{budget ? `${money(Math.abs(budget-report.spending))} ${report.spending > budget ? "over plan" : "remaining"}` : "Set a plan in Spending plan"}</small></div></div>
-              <div className="spending-chart">
-                <div className="chart-legend">
-                  <span>
-                    <i /> Cumulative report spending
-                  </span>
-                  {budget > 0 && (
-                    <span>
-                      <i className="plan-dot" /> Monthly plan
-                    </span>
-                  )}
-                </div>
-                <svg
-                  viewBox="0 0 600 110"
-                  preserveAspectRatio="none"
-                  role="img"
-                  aria-label="Cumulative report spending through the selected month"
-                >
-                  <path
-                    d="M0 95 H600 M0 50 H600"
-                    stroke="var(--border)"
-                    fill="none"
-                  />
-                  {budget > 0 && (
-                    <path
-                      d={`M0 ${100 - (budget / max) * 85} H600`}
-                      stroke="var(--muted-foreground)"
-                      strokeDasharray="5 5"
-                      fill="none"
-                    />
-                  )}
-                  <path
-                    d={`M0 100 ${daily.map((n, i) => `L${(i * 600) / (dayCount - 1)} ${100 - (n / max) * 85}`).join(" ")} L600 100 Z`}
-                    fill="var(--muted)"
-                  />
-                  <polyline
-                    points={daily
-                      .map(
-                        (n, i) =>
-                          `${(i * 600) / (dayCount - 1)},${100 - (n / max) * 85}`,
-                      )
-                      .join(" ")}
-                    fill="none"
-                    stroke="var(--finance-ink)"
-                    strokeWidth="2.5"
-                  />
-                </svg>
-                <div className="chart-axis">
-                  <span>1 {monthName(month).split(" ")[0]}</span>
-                  <span>15</span>
-                  <span>Month end</span>
-                </div>
-              </div>
-              <p className="chart-caption">Report spending · Transfers excluded</p>
-            </section>
+            <SpendingInsights entries={reportEntries} month={month} today={manilaToday()} budget={budget} categories={transactionCategories} planHref={demo ? `/demo?month=${month}&view=analysis` : `/dashboard/budgets?month=${month}`} />
             <MonthlyLink loadedMonth={month} className="review-link" href={route("transactions", "pending")}><span>Needs review · includes attribution</span><span><b className="review-count">{pending.length}</b><ChevronRight size={16}/></span></MonthlyLink>
           </>}
           {view === "analysis" && <div className="analysis-view">

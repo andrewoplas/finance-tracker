@@ -48,13 +48,12 @@ Idempotency-Key: <a UUID unique to this SMS>
 
 ```json
 {
-  "sms": "Your transaction at CBTL SM STORE CEBU on 10/10 5:43PM for PHP195.00 using your Card ending in xxxx2004 is approved.",
-  "received_at": "2026-10-10T17:48:00+08:00"
+  "sms": "Your transaction at CBTL SM STORE CEBU on 10/10 5:43PM for PHP195.00 using your Card ending in xxxx2004 is approved."
 }
 ```
 
-Send one complete SMS (up to 2,000 UTF-8 bytes) and the actual receipt timestamp
-with its timezone offset. Do not send an `Origin` header. Generate one UUID for
+Send one complete SMS (up to 2,000 UTF-8 bytes). `received_at` is optional;
+if supplied, use the actual receipt timestamp with its timezone offset. Do not send an `Origin` header. Generate one UUID for
 each new message and retain it with the body until the result is confirmed.
 Every retry must use the same UUID and exact body.
 
@@ -65,9 +64,9 @@ receipt and `duplicate:true`. Existing Finance duplicate checks can return
 
 Promotions, OTPs, declines, refunds, repayments, transfers, cash advances and
 installment notices are ignored. Missing/conflicting fields, ambiguous dates,
-non-PHP currency and missing purchase times are not saved. A missing year is
-resolved against the receipt timestamp only within a 72-hour window; purchase
-time is never copied from the receipt time. These extraction issues return
+non-PHP currency and missing purchase times are not saved. A missing year uses the current year in Asia/Manila; an explicit year is
+preserved. If `received_at` is supplied, the purchase must fall within 72 hours
+before it or five minutes after it. Purchase time is never copied from receipt time. These extraction issues return
 `needs_review`, `persisted:false`, and the parsed fields; they do not create an
 inbox entry, so inspect the response and log manually if appropriate.
 
@@ -95,7 +94,7 @@ uncertain save. Backend idempotency returns the existing transaction.
 OpenAI, Finance or checkpoint storage is unavailable. A `persisted:false` error
 does not prove an uncertain commit failed; preserve the original request.
 
-Only the SMS and receipt timestamp are sent to OpenAI, with `store:false`, strict
+Only the SMS, server current year, and optional receipt timestamp are sent to OpenAI, with `store:false`, strict
 JSON output, no tools, minimal reasoning, a 1,000-output-token limit, a 45-second
 timeout and SDK retries disabled. The raw SMS and credentials are not logged or
 stored in the checkpoint table. Derived fields and receipts are retained there

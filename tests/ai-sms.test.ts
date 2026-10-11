@@ -12,7 +12,7 @@ import { Purchase, validPurchase, parseWithOpenAI } from '../lib/finance/ai-sms/
 const purchase: Purchase = { kind: 'purchase', merchant: 'Synthetic Shop', amount: '12.30', currency: 'PHP', last4: '9999', date: '2026-10-10', time: '13:00' };
 const input = { sms: 'Approved PHP12.30 at Synthetic Shop on 10/10 1:00PM using card xxxx9999.', received_at: '2026-10-10T13:01:00+08:00' };
 const token = 'synthetic-test-worker-token-32-characters';
-function request(id: string, body = input, authorization = `Bearer ${token}`) {
+function request(id: string, body: { sms: string; received_at?: string } = input, authorization = `Bearer ${token}`) {
   return new Request('http://localhost/api/v1/card-notifications', { method: 'POST', headers: { Authorization: authorization, 'Content-Type': 'application/json', 'Idempotency-Key': id }, body: JSON.stringify(body) });
 }
 async function fixture(run: (dir: string) => Promise<void>) {
@@ -123,6 +123,7 @@ test('a leased request rejects concurrent retries before another parse', async (
 
 test('date/time, currency, and exact positive amount are checked outside AI', () => {
   assert.equal(validPurchase(purchase, input), true);
+  assert.equal(validPurchase(purchase, { sms: input.sms }), true);
   assert.equal(validPurchase({ ...purchase, date: '2026-10-09' }, { ...input, received_at: '2026-10-14T13:01:00+08:00' }), false);
   assert.equal(validPurchase({ ...purchase, time: null }, input), false);
   assert.equal(validPurchase({ ...purchase, currency: 'USD' }, input), false);
@@ -136,6 +137,8 @@ test('OpenAI uses the cheap model and strict bounded output; incomplete and conf
   let output: unknown = purchase, status = 'completed';
   const client = { responses: { create: async (body: Record<string, unknown>) => {
     assert.equal(body.model, 'gpt-5-nano');
+    const sent = JSON.parse(body.input as string);
+    assert.equal(sent.current_year, new Intl.DateTimeFormat('en', { timeZone: 'Asia/Manila', year: 'numeric' }).format(new Date()));
     assert.equal(body.store, false); assert.equal(body.max_output_tokens, 1000);
     assert.deepEqual(body.reasoning, { effort: 'minimal' });
     assert.equal(body.tools, undefined);
@@ -144,8 +147,27 @@ test('OpenAI uses the cheap model and strict bounded output; incomplete and conf
     return { status, output_text: JSON.stringify(output) };
   } } } as unknown as OpenAI;
   assert.deepEqual(await parseWithOpenAI(input, client), purchase);
+  assert.deepEqual(await parseWithOpenAI({ sms: input.sms }, client), purchase);
   output = { ...purchase, kind: 'unsupported' };
   await assert.rejects(parseWithOpenAI(input, client), /ai_classification_conflict/);
   status = 'incomplete';
   await assert.rejects(parseWithOpenAI(input, client), /ai_unavailable/);
 });
+
+test('SMS-only request saves and retries without a receipt timestamp', async () => fixture(async dir => {
+  const id = randomUUID();
+  let parsed = 0, committed = 0;
+  const handler = makeSmsWorker(config(dir), async incoming => {
+    assert.equal(incoming.received_at, undefined);
+    parsed++; return purchase;
+  }, async (_url, init) => {
+    const body = JSON.parse(String(init?.body));
+    if (body.action === 'preview') return Response.json({ request_id: id, persisted: false, date: purchase.date, digest: 'b'.repeat(64), entry: { amount: purchase.amount, date: purchase.date, time: purchase.time }, summary: { account: 'Test Card', category: 'Spending' } });
+    committed++;
+    return Response.json({ id: randomUUID(), transaction_id: randomUUID(), status: 'recorded', persisted: true, duplicate: false });
+  });
+  const body = { sms: input.sms };
+  assert.equal((await handler(request(id, body))).status, 201);
+  assert.equal((await (await handler(request(id, body))).json()).duplicate, true);
+  assert.equal(parsed, 1); assert.equal(committed, 1);
+}));

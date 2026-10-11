@@ -25,7 +25,7 @@ export function CategoryPie({ title, total, rows, names, selectedCategory, onSel
     <div className="category-pie-total">{money(total)}</div>
     {total > 0 ? <>
       <div className="category-pie-visual" role="img" aria-label={`${title}: ${money(total)}, split by category. Amounts and percentages listed below.`} style={{ background: `conic-gradient(${gradient})` }} />
-      <p className="insight-help">{onSelect ? "Choose a category to see its expenses below." : "By income category"}</p>
+      <p className="insight-help">{onSelect ? "Choose a category to open its purchases." : "By income category"}</p>
       <ul className="category-pie-legend">
         {(showAll ? slices : slices.slice(0, 5)).map(slice => {
           const content = <><i style={{ background: slice.color }} aria-hidden="true" /><span>{names.get(slice.id ?? "") ?? "Uncategorized"}</span><strong>{money(slice.amount)}</strong><small>{Math.round(slice.amount / total * 100)}%</small></>;

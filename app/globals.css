@@ -1046,3 +1046,31 @@ button:focus-visible,a:focus-visible,summary:focus-visible { outline:2px solid v
 .category-pie-legend strong { font-variant-numeric:tabular-nums; white-space:nowrap; }
 .category-pie-empty { text-align:center; }.income-expense-summary { padding:18px 0 10px; font-size:14px; }.income-expense-summary p { margin-top:6px; }
 @media(max-width:700px) { .category-pies { grid-template-columns:minmax(0,1fr); }.category-pie-card { padding:18px 14px; } }
+
+/* One bounded overview card at a time, with native touch/trackpad swiping. */
+.overview-card-panel { min-width:0; }
+.overview-carousel-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.overview-carousel-heading p { display:flex; align-items:center; gap:12px; font-size:15px; }
+.overview-carousel-heading p>span { font-size:12px; color:var(--muted-foreground); }
+.overview-carousel-arrows { display:flex; gap:6px; }
+.overview-carousel-arrows button { display:grid; place-items:center; width:44px; height:44px; border:1px solid var(--border); border-radius:50%; }
+.overview-carousel-arrows button:disabled { opacity:0.3; cursor:default; }
+.overview-carousel-track { position:relative; display:flex; gap:16px; overflow-x:auto; scroll-snap-type:x mandatory; overscroll-behavior-x:contain; scrollbar-width:none; border-radius:20px; }
+.overview-carousel-track::-webkit-scrollbar { display:none; }
+.overview-carousel-card { flex:0 0 100%; min-width:0; height:clamp(380px,65svh,560px); overflow-y:auto; overscroll-behavior-y:contain; scroll-snap-align:start; scroll-snap-stop:always; border:1px solid var(--border); border-radius:20px; background:var(--card); padding:24px; }
+.overview-carousel-card .category-pie-card { padding:0; border:0; border-radius:0; }
+.overview-carousel-card .category-pie-visual { width:160px; margin:18px auto; }
+.overview-carousel-card .category-pie-legend { max-width:560px; margin-inline:auto; }
+.overview-carousel-card .net-worth-card { padding:0; border:0; }
+.overview-carousel-card .insight-purchases,.overview-carousel-card .insight-daily { margin:0; padding:0; border:0; }
+.overview-carousel-card .insight-purchase-list { max-width:800px; }
+.overview-carousel-card .insight-day-bars { flex-wrap:wrap; overflow-x:visible; }
+.overview-carousel-card .insight-day-bars button { flex:0 0 calc((100% - 24px)/7); min-width:0; max-width:none; }
+.overview-carousel-card .insight-day-column { height:58px; }
+.overview-carousel-navigation { display:flex; justify-content:center; gap:4px; margin-top:8px; }
+.overview-carousel-navigation button { width:32px; height:36px; display:grid; place-items:center; }
+.overview-carousel-navigation button>span { width:7px; height:7px; border-radius:50%; background:var(--muted-foreground); opacity:0.4; }
+.overview-carousel-navigation button[aria-current="true"]>span { opacity:1; background:var(--foreground); width:20px; border-radius:5px; }
+.overview-swipe-hint { text-align:center; }.overview-recent-toggle { min-height:44px; margin-bottom:12px; }
+.overview-carousel-track:focus-visible,.overview-carousel button:focus-visible { outline:2px solid var(--chart-2); outline-offset:2px; }
+@media(max-width:600px) { .overview-carousel-card { padding:18px 14px; border-radius:16px; }.overview-carousel-card .category-pie-visual { width:140px; }.overview-carousel-card .section-heading { flex-wrap:wrap; gap:8px; } }

@@ -81,6 +81,7 @@ export function MonthlyOverview({
   const requestedView = search.get("view") ?? initialView;
   const view = ["overview", "transactions", "analysis", "reflection"].includes(requestedView) ? requestedView : "overview";
   const [entries, setEntries] = useState(data.entries);
+  const [showRecent, setShowRecent] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<LedgerEntry | null>(null);
   const [notice, setNotice] = useState("");
@@ -308,7 +309,8 @@ export function MonthlyOverview({
 
             </section>
           </div>}
-          {(view === "overview" || view === "transactions") && <section className="surface activity-panel" id="activity">
+          {view === "overview" && <button type="button" className="text-button overview-recent-toggle" aria-expanded={showRecent} aria-controls="activity" onClick={() => setShowRecent(value => !value)}>{showRecent ? "Hide recent transactions" : "Show recent transactions"}<ChevronDown size={16} aria-hidden="true" /></button>}
+          {(view === "transactions" || (view === "overview" && showRecent)) && <section className="surface activity-panel" id="activity">
             <div className="section-heading">
               <div>
                 <h2>{view === "overview" ? "Recent transactions" : filter === "pending" ? "Needs review" : "Transactions"}</h2>

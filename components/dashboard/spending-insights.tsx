@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { spendingInsights } from "@/lib/finance/spending-insights";
+import { OverviewCarousel, type OverviewCarouselHandle } from "./overview-carousel";
 import { CategoryPie } from "./category-pie";
 import type { NetWorth } from "@/lib/finance/net-worth";
 import type { LedgerEntry } from "@/lib/finance/core";
@@ -19,6 +20,7 @@ export function SpendingInsights({ entries, month, today, budget, categories, pl
   entries: LedgerEntry[]; month: string; today: string; budget: number;
   categories: { id: string; name: string }[]; planHref: string;
 }) {
+  const carousel = useRef<OverviewCarouselHandle>(null);
   const [showPurchases, setShowPurchases] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [filter, setFilter] = useState<{ kind: "category"; id: string | null } | { kind: "day"; date: string } | null>(null);
@@ -35,9 +37,12 @@ export function SpendingInsights({ entries, month, today, budget, categories, pl
   function chooseFilter(next: typeof filter) {
     setFilter(next);
     setShowPurchases(false);
+    carousel.current?.goTo(3);
   }
 
-  return <section className="surface spending-hero insights-panel" aria-label="Income and spending insights">
+  return <section className="insights-panel overview-card-panel" aria-label="Income and spending insights">
+    <OverviewCarousel carouselRef={carousel} cards={[
+      { title: "Net worth", content: (<>
     <section className="net-worth-card" aria-label="Net worth">
       <div className="section-heading"><h2>Net worth</h2><Link href={accountsHref}>View accounts →</Link></div>
       <p className="insight-help">Current active accounts · Independent of the selected month</p>
@@ -45,14 +50,16 @@ export function SpendingInsights({ entries, month, today, budget, categories, pl
       {netWorth?.status === "ready" ? <div className="net-worth-parts"><span>Assets <strong>{money(netWorth.assets)}</strong></span><span>Debts <strong>{money(netWorth.debts)}</strong></span></div> : <p className="insight-help">{netWorth?.status === "unknown" ? `${netWorth.unknownCount} ${netWorth.unknownCount === 1 ? "account needs" : "accounts need"} a verified balance before we can calculate net worth.` : "Add or review your accounts to see net worth."}</p>}
       <p className="insight-help">Assets minus debts recorded in your active accounts. Archived accounts and assets held outside this app are excluded.</p>
     </section>
-    <p className="category-pies-period">Income and expenses · {new Intl.DateTimeFormat("en-PH", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${month}-01T00:00:00Z`))}</p>
-    <div className="category-pies">
+      </>) },
+      { title: "Income", content: (<>
       <CategoryPie title="Total income" total={insights.income} rows={insights.incomeCategories} names={names} />
+        <p className="insight-help">{monthLabel} {month.slice(0, 4)} · Report-month income. Collected reimbursements of {money(insights.collected)} are separate.</p>
+      </>) },
+      { title: "Expenses", content: (<>
       <CategoryPie title="Total expenses" total={insights.total} rows={insights.categories} names={names} selectedCategory={filter?.kind === "category" ? filter : null} onSelect={id => chooseFilter(filter?.kind === "category" && filter.id === id ? null : { kind: "category", id })} />
-    </div>
-    <div className="income-expense-summary"><strong>Income − expenses: {money(insights.incomeMinusSpending)}</strong><p className="insight-help">Report-month totals, not an account balance. Transfers excluded. Reimbursements collected: {money(insights.collected)}, separate from earned income.</p></div>
-    <p className="insight-takeaway">{insights.income > 0 ? `Spending is ${Math.round(insights.total / insights.income * 100)}% of recorded income.` : insights.total > 0 ? "You have recorded expenses, but no income for this month yet." : "Add income and expenses to see your month take shape."}</p>
-
+        <p className="insight-help">{monthLabel} {month.slice(0, 4)} · Report-month expenses. Transfers excluded.</p>
+      </>) },
+      { title: "Purchases", content: (<>
       <section className="insight-purchases" id="overview-purchases" aria-label="Expense details">
         <div className="section-heading"><h3>{purchaseTitle}</h3>{filter && <button type="button" className="text-button" onClick={() => chooseFilter(null)}>Clear filter</button>}</div>
         <p className="insight-help" role="status">{purchases.length} {purchases.length === 1 ? "expense" : "expenses"}{filter ? ` · ${money(purchases.reduce((sum, purchase) => sum + purchase.amount, 0))}` : " · Largest amounts first"}</p>
@@ -66,9 +73,11 @@ export function SpendingInsights({ entries, month, today, budget, categories, pl
         {purchases.length > 5 && <button type="button" className="text-button" aria-expanded={showPurchases} onClick={() => setShowPurchases(value => !value)}>{showPurchases ? "Show top 5" : `Show all ${purchases.length} expenses`}</button>}
       </section>
 
+      </>) },
+      { title: "Daily spending", content: (<>
     <section className="insight-daily" aria-label="Daily expenses">
       <div className="section-heading"><h3>When you spent</h3><span className="insight-help">Through {throughLabel}</span></div>
-      <p className="insight-help">Choose a day to see its expenses above. Bar height shows the amount spent that day.</p>
+      <p className="insight-help">Choose a day to open its purchases. Bar height shows the amount spent that day.</p>
       {insights.elapsed ? <>
         <p className="insight-help">Largest day: {money(Math.max(...elapsedDays.map(day => day.amount)))}</p>
         <div className="insight-day-bars" role="group" aria-label="Choose a spending day">
@@ -84,10 +93,17 @@ export function SpendingInsights({ entries, month, today, budget, categories, pl
       {(insights.future > 0 || insights.outsideDates > 0) && <p className="chart-caption">The monthly total also includes {insights.future > 0 ? `${money(insights.future)} dated later` : ""}{insights.future > 0 && insights.outsideDates > 0 ? " and " : ""}{insights.outsideDates > 0 ? `${money(insights.outsideDates)} assigned from other months` : ""}. These appear in the expense list, but not the daily bars. Installments use their bill date.</p>}
     </section>
 
+      </>) },
+      { title: "Monthly summary", content: (<>
+    <div className="income-expense-summary"><strong>Income − expenses: {money(insights.incomeMinusSpending)}</strong><p className="insight-help">Report-month totals, not an account balance. Transfers excluded. Reimbursements collected: {money(insights.collected)}, separate from earned income.</p></div>
+    <p className="insight-takeaway">{insights.income > 0 ? `Spending is ${Math.round(insights.total / insights.income * 100)}% of recorded income.` : insights.total > 0 ? "You have recorded expenses, but no income for this month yet." : "Add income and expenses to see your month take shape."}</p>
+
     <div className="insight-plan"><span>Monthly spending plan</span><strong>{budget ? money(budget) : "Not set"}</strong><span>{budget ? `${money(Math.abs(remaining))} ${remaining < 0 ? "over plan" : "remaining"}` : <Link href={planHref}>Set a spending plan →</Link>}</span></div>
     <div className="insight-comparison">
       <button type="button" className="text-button" aria-expanded={showComparison} aria-controls="overview-cumulative" onClick={() => setShowComparison(value => !value)}>{showComparison ? "Hide cumulative comparison" : "Show cumulative income vs. spending"}</button>
       <div id="overview-cumulative">{showComparison && <MonthlyComparisonChart insights={insights} budget={budget} monthLabel={monthLabel} throughLabel={throughLabel} />}</div>
     </div>
+      </>) },
+    ]} />
   </section>;
 }

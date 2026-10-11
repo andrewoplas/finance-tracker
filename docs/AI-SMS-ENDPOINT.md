@@ -43,7 +43,6 @@ Sources: [GPT-5 nano](https://developers.openai.com/api/docs/models/gpt-5-nano),
 ```http
 Authorization: Bearer <FINANCE_SMS_HTTP_KEY>
 Content-Type: application/json
-Idempotency-Key: <a UUID unique to this SMS>
 ```
 
 ```json
@@ -53,9 +52,15 @@ Idempotency-Key: <a UUID unique to this SMS>
 ```
 
 Send one complete SMS (up to 2,000 UTF-8 bytes). `received_at` is optional;
-if supplied, use the actual receipt timestamp with its timezone offset. Do not send an `Origin` header. Generate one UUID for
-each new message and retain it with the body until the result is confirmed.
-Every retry must use the same UUID and exact body.
+if supplied, use the actual receipt timestamp with its timezone offset. Do not send an `Origin` header. The server generates a stable UUID from the
+trimmed SMS text, scoped to the configured Finance credential. Identical SMS
+text reuses the same request, even across deployments. Distinct messages with
+identical text are therefore treated as duplicates, including across years.
+Keep the exact body for retries, including `received_at` if supplied.
+
+`Idempotency-Key` is optional. Existing callers can still supply a UUID; an
+invalid supplied value returns 400. Keep that UUID unchanged on retries.
+Do not switch between supplying and omitting the header for the same request.
 
 HTTP 201 with `status:"recorded"`, `persisted:true`, and `transaction_id` confirms
 a new expense. An identical successful retry returns HTTP 200 with the same
@@ -85,7 +90,7 @@ database lease expires after 150 seconds if the HTTP request crashes.
 
 The parsed result and exact commit payload are checkpointed before saving.
 Network timeouts or HTTP 503 can mean the upstream save succeeded: retry the
-identical request. Never generate a new UUID or edit the body to work around an
+identical request. Never change the idempotency header or edit the body to work around an
 uncertain save. Backend idempotency returns the existing transaction.
 
 401 means wrong/revoked credentials; 400/413/415 mean invalid request/body type;

@@ -25,6 +25,16 @@ function selector(value: string): string {
   return `category:"${value}"`;
 }
 
+// Version-8 UUID from a credential-scoped SHA-256 digest. Stable across
+// retries and deployments; no raw SMS or credential is exposed in the ID.
+function smsRequestId(sms: string, financeToken: string): string {
+  const bytes = createHash('sha256').update(JSON.stringify(['finance-sms-v1', financeToken, sms])).digest().subarray(0, 16);
+  bytes[6] = (bytes[6] & 0x0f) | 0x80;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 export function makeSmsHandler(config: SmsConfig, parse: Parser, store: StateStore, forwardRequest: (request: Request) => Promise<Response>) {
   const expected = createHash('sha256').update(`Bearer ${config.token}`).digest();
   async function forward(id: string, body: unknown) {
@@ -47,17 +57,19 @@ export function makeSmsHandler(config: SmsConfig, parse: Parser, store: StateSto
     if (!timingSafeEqual(actual, expected)) return json({ error: 'unauthorized' }, 401);
     if (request.method !== 'POST' || new URL(request.url).pathname !== '/api/v1/card-notifications') return json({ error: 'not_found' }, 404);
     if (request.headers.has('origin')) return json({ error: 'origin_rejected' }, 403);
-    const id = z.uuid().safeParse(request.headers.get('idempotency-key'));
-    if (!id.success) return json({ error: 'Idempotency-Key must be a UUID' }, 400);
+    const suppliedId = request.headers.get('idempotency-key');
+    if (suppliedId !== null && !z.uuid().safeParse(suppliedId).success) return json({ error: 'Idempotency-Key must be a UUID' }, 400);
+    let id = suppliedId ?? '';
     const lease = randomUUID();
     let hash = '', claimed = false;
     try {
       const input = smsRequest.safeParse(await readJson(request, 8192));
       if (!input.success || Buffer.byteLength(input.data.sms) > 2000) return json({ error: 'invalid_input' }, 400);
+      id ||= smsRequestId(input.data.sms, config.financeToken);
       hash = createHash('sha256').update(JSON.stringify(input.data)).digest('hex');
-      const state = await store('claim', id.data, hash, lease);
+      const state = await store('claim', id, hash, lease);
       claimed = true;
-      const save = (value: State) => store('checkpoint', id.data, hash, lease, value);
+      const save = (value: State) => store('checkpoint', id, hash, lease, value);
       if (state.response) {
         const body = state.response.body as Record<string, unknown>;
         return json({ ...body, duplicate: true }, 200);
@@ -81,10 +93,10 @@ export function makeSmsHandler(config: SmsConfig, parse: Parser, store: StateSto
         const merchant = p.merchant!.replace(/[^\p{L}\p{N} .&'()-]/gu, ' ').replace(/\s+/g, ' ').trim();
         if (!merchant || /\d{4}-\d{2}-\d{2}|\b(?:time|category)\b/i.test(merchant)) return json({ error: 'merchant_needs_review', persisted: false }, 422);
         const text = `${merchant} ${p.amount} ${p.date} ${selector(card.category)} ${card.account}`;
-        const preview = await forward(id.data, { text, time: p.time, action: 'preview' });
+        const preview = await forward(id, { text, time: p.time, action: 'preview' });
         // Backend resolves ownership and category. Verify it did not reinterpret
         // the model's amount, account, date or purchase time before committing.
-        if (preview.persisted !== false || preview.request_id !== id.data || preview.date !== p.date
+        if (preview.persisted !== false || preview.request_id !== id || preview.date !== p.date
           || preview.entry?.amount !== p.amount || preview.entry?.date !== p.date
           || ![p.time, `${p.time}:00`].includes(preview.entry?.time)
           || preview.summary?.account !== card.account || preview.summary?.category !== card.category
@@ -95,7 +107,7 @@ export function makeSmsHandler(config: SmsConfig, parse: Parser, store: StateSto
         // Durable before commit: a crash or HTTP timeout can only replay it.
         await save(state);
       }
-      const result = receipt.parse(await forward(id.data, state.retry));
+      const result = receipt.parse(await forward(id, state.retry));
       state.response = { status: result.status === 'recorded' && !result.duplicate ? 201 : 200, body: { ...result, purchase: p } };
       await save(state);
       return json(state.response.body, state.response.status);
@@ -105,7 +117,7 @@ export function makeSmsHandler(config: SmsConfig, parse: Parser, store: StateSto
       if (response.status === 429) response.headers.set('Retry-After', '60');
       return response;
     } finally {
-      if (claimed) await store('release', id.data, hash, lease).catch(() => {});
+      if (claimed) await store('release', id, hash, lease).catch(() => {});
     }
   };
 }

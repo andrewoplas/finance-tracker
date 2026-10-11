@@ -4,6 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { z } from 'zod';
 import { makeSmsHandler, State, Parser } from '../lib/finance/ai-sms/http';
 import { InputError } from '../lib/finance/sms/http';
 import OpenAI from 'openai';
@@ -170,4 +171,48 @@ test('SMS-only request saves and retries without a receipt timestamp', async () 
   assert.equal((await handler(request(id, body))).status, 201);
   assert.equal((await (await handler(request(id, body))).json()).duplicate, true);
   assert.equal(parsed, 1); assert.equal(committed, 1);
+}));
+
+function automaticRequest(body: { sms: string; received_at?: string }) {
+  const req = request(randomUUID(), body);
+  req.headers.delete('Idempotency-Key');
+  return req;
+}
+
+test('server-generated IDs replay saves and preserve uncertain commits across handler restarts', async () => fixture(async dir => {
+  let parsed = 0, id = '', failCommit = true;
+  const commits: string[] = [];
+  const fetcher: typeof fetch = async (_url, init) => {
+    const forwardedId = new Headers(init?.headers).get('Idempotency-Key')!;
+    assert.equal(z.uuid().safeParse(forwardedId).success, true);
+    if (id) assert.equal(forwardedId, id);
+    id = forwardedId;
+    const body = JSON.parse(String(init?.body));
+    if (body.action === 'preview') return Response.json({ request_id: id, persisted: false, date: purchase.date, digest: 'b'.repeat(64), entry: { amount: purchase.amount, date: purchase.date, time: purchase.time }, summary: { account: 'Test Card', category: 'Spending' } });
+    commits.push(String(init?.body));
+    if (failCommit) { failCommit = false; throw new Error('unknown commit outcome'); }
+    return Response.json({ id: randomUUID(), transaction_id: randomUUID(), status: 'recorded', persisted: true, duplicate: true });
+  };
+  const body = { sms: input.sms };
+  let handler = makeSmsWorker(config(dir), async () => { parsed++; return purchase; }, fetcher);
+  assert.equal((await handler(automaticRequest(body))).status, 503);
+  handler = makeSmsWorker(config(dir), async () => { throw new Error('must not reparse'); }, fetcher);
+  assert.equal((await handler(automaticRequest(body))).status, 200);
+  assert.equal((await (await handler(automaticRequest(body))).json()).duplicate, true);
+  assert.equal(commits.length, 2); assert.equal(commits[0], commits[1]); assert.equal(parsed, 1);
+  // Same SMS with changed optional context must not silently create a new save.
+  assert.equal((await handler(automaticRequest(input))).status, 409);
+}));
+
+test('different SMS texts get separate automatic IDs; invalid supplied IDs never parse', async () => fixture(async dir => {
+  let parsed = 0;
+  const handler = makeSmsWorker(config(dir), async () => { parsed++; return { kind: 'unsupported', merchant: null, amount: null, currency: null, last4: null, date: null, time: null }; });
+  for (const sms of ['Promo one', 'Promo two']) {
+    assert.equal((await handler(automaticRequest({ sms }))).status, 200);
+    assert.equal((await (await handler(automaticRequest({ sms }))).json()).duplicate, true);
+  }
+  const malformed = automaticRequest({ sms: 'Promo three' });
+  malformed.headers.set('Idempotency-Key', 'not-a-uuid');
+  assert.equal((await handler(malformed)).status, 400);
+  assert.equal(parsed, 2);
 }));

@@ -12,15 +12,14 @@ const commitInput = z.object({
   digest: z.string().regex(/^[a-f0-9]{64}$/),
 }).strict();
 
-/** Actions use a JSON retry object, rather than a custom idempotency header.
- * Forward locally through the same scoped HTTP boundary. During temporary Dot
- * testing, the server supplies its configured key when the caller sends none.
+/** Public Dot expense calls use a fixed server credential. Caller credentials
+ * never select the owner; the existing scoped RPC still validates each save.
  */
 export async function handleChatGptQuickLog(
   request: Request,
   action: 'preview' | 'commit',
   forward: (request: Request) => Promise<Response>,
-  testToken?: string,
+  serverToken?: string,
 ) {
   try {
     const input = (action === 'preview' ? previewInput : commitInput).safeParse(await readJson(request));
@@ -28,12 +27,11 @@ export async function handleChatGptQuickLog(
     const value: z.infer<typeof previewInput> & Partial<z.infer<typeof commitInput>> = input.data;
     const requestId = value.request_id ?? randomUUID();
     const headers = new Headers({ 'Content-Type': 'application/json', 'Idempotency-Key': requestId });
-    for (const name of ['authorization', 'origin']) {
+    if (!serverToken || !/^ft_quick_[a-f0-9]{64}$/.test(serverToken)) return json({ error: 'Expense logging is not configured' }, 503);
+    headers.set('authorization', `Bearer ${serverToken}`);
+    for (const name of ['origin']) {
       const header = request.headers.get(name);
       if (header !== null) headers.set(name, header);
-    }
-    if (!headers.has('authorization') && testToken && /^ft_quick_[a-f0-9]{64}$/.test(testToken)) {
-      headers.set('authorization', `Bearer ${testToken}`);
     }
     const response = await forward(new Request(request.url, {
       method: 'POST', headers,

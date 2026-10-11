@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Finance Tracker expense logging",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Preview and record personal PHP expenses. Learns consistent account/category/tag choices from owned reviewed matching expenses. Dates default to today in Asia/Manila. Only claim saved after a recorded receipt with persisted=true and a transaction_id. Preserve the exact preview retry object for commit and every retry."
   },
   "servers": [
@@ -10,11 +10,7 @@
       "url": "https://finance-tracker-eosin-eight.vercel.app"
     }
   ],
-  "security": [
-    {
-      "quickLogKey": []
-    }
-  ],
+  "security": [],
   "paths": {
     "/api/v1/chatgpt/preview": {
       "post": {
@@ -248,13 +244,6 @@
     }
   },
   "components": {
-    "securitySchemes": {
-      "quickLogKey": {
-        "type": "http",
-        "scheme": "bearer",
-        "description": "An ft_quick_ scoped expense-write key created by the owner in Finance Tracker Settings. Configure privately in GPT Actions authentication, never in the conversation."
-      }
-    },
     "schemas": {
       "PreviewInput": {
         "type": "object",
@@ -267,7 +256,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 1000,
-            "description": "Expense description and exact positive PHP amount, optionally a full YYYY-MM-DD date and explicit account name at the end. Optional exp prefix; pesos, PHP and ₱ accepted. Never guess the amount.",
+            "description": "Expense description and exact positive PHP amount, optionally a full YYYY-MM-DD date and explicit account name at the end. Optional exp prefix; pesos, PHP and \u20b1 accepted. Never guess the amount.",
             "example": "Badminton queue 250pesos"
           }
         }

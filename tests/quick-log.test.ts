@@ -158,16 +158,16 @@ test('ChatGPT Actions carry a server-issued retry object through the authenticat
   const forward=(request:Request)=>handleQuickLog(request,async args=>({data:(await db.query<{r:unknown}>('select submit_quick_log($1,$2::uuid,$3,$4,$5::date,$6) r',[args.p_token,args.p_request_id,args.p_text,args.p_action,args.p_date,args.p_digest])).rows[0].r,error:null}));
   const request=(action:'preview'|'commit',body:unknown,key=token)=>new Request(`https://tracker.example/api/v1/chatgpt/${action}`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${key}`},body:JSON.stringify(body)});
   const text='Badminton queue 250pesos';
-  const response=await handleChatGptQuickLog(request('preview',{text}),'preview',forward);assert.equal(response.status,200);assert.equal(response.headers.get('Cache-Control'),'no-store');
+  const response=await handleChatGptQuickLog(request('preview',{text}),'preview',forward,token);assert.equal(response.status,200);assert.equal(response.headers.get('Cache-Control'),'no-store');
   const preview=await response.json();assert.equal(preview.persisted,false);assert.equal(preview.entry.amount,'250.00');assert.equal(preview.entry.date,(await db.query<{today:string}>("select ((now() at time zone 'Asia/Manila')::date)::text today")).rows[0].today);
   assert.deepEqual(preview.retry,{request_id:preview.request_id,text,date:preview.date,digest:preview.digest});
-  const send=()=>handleChatGptQuickLog(request('commit',preview.retry),'commit',forward);
+  const send=()=>handleChatGptQuickLog(request('commit',preview.retry),'commit',forward,token);
   const saved=await send();assert.equal(saved.status,201);const receipt=await saved.json();assert.equal(receipt.status,'recorded');assert.equal(receipt.persisted,true);assert.ok(receipt.transaction_id);
   const retried=await send();assert.equal(retried.status,200);assert.equal((await retried.json()).transaction_id,receipt.transaction_id);
-  assert.equal((await handleChatGptQuickLog(request('commit',{...preview.retry,text:'Different 250pesos'}),'commit',forward)).status,409);
-  const again=await (await handleChatGptQuickLog(request('preview',{text}),'preview',forward)).json();
-  const held=await (await handleChatGptQuickLog(request('commit',again.retry),'commit',forward)).json();assert.equal(held.status,'needs_review');assert.equal(held.persisted,false);
-  assert.equal((await handleChatGptQuickLog(request('preview',{text},'ft_sms_'+'a'.repeat(64)),'preview',forward)).status,401);
+  assert.equal((await handleChatGptQuickLog(request('commit',{...preview.retry,text:'Different 250pesos'}),'commit',forward,token)).status,409);
+  const again=await (await handleChatGptQuickLog(request('preview',{text}),'preview',forward,token)).json();
+  const held=await (await handleChatGptQuickLog(request('commit',again.retry),'commit',forward,token)).json();assert.equal(held.status,'needs_review');assert.equal(held.persisted,false);
+  assert.equal((await handleChatGptQuickLog(request('preview',{text},'ft_sms_'+'a'.repeat(64)),'preview',forward,token)).status,200);
   await db.exec('reset role');assert.equal(await count('transactions'),1);assert.equal(await count('financial_audit'),1);assert.equal(await count('quick_log_inbox'),1);
  }finally{await db.close();}
 });
@@ -175,29 +175,35 @@ test('ChatGPT Actions carry a server-issued retry object through the authenticat
 test('ChatGPT boundary rejects unknown fields, missing retry data, excessive bodies and foreign origins',async()=>{
  const request=(body:unknown,origin?:string)=>new Request('https://tracker.example/api/v1/chatgpt/preview',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`,...(origin?{Origin:origin}:{})},body:JSON.stringify(body)});
  let calls=0;const forward=(req:Request)=>handleQuickLog(req,async()=>{calls++;return {data:null,error:true};});
- assert.equal((await handleChatGptQuickLog(request({text:'Badminton queue 250pesos',owner}),'preview',forward)).status,400);
- assert.equal((await handleChatGptQuickLog(request({text:'Badminton queue 250pesos'}),'commit',forward)).status,400);
- assert.equal((await handleChatGptQuickLog(request({text:'a'.repeat(5000)}),'preview',forward)).status,413);
- assert.equal((await handleChatGptQuickLog(request({text:'Badminton queue 250pesos'},'https://attacker.example'),'preview',forward)).status,403);
+ assert.equal((await handleChatGptQuickLog(request({text:'Badminton queue 250pesos',owner}),'preview',forward,token)).status,400);
+ assert.equal((await handleChatGptQuickLog(request({text:'Badminton queue 250pesos'}),'commit',forward,token)).status,400);
+ assert.equal((await handleChatGptQuickLog(request({text:'a'.repeat(5000)}),'preview',forward,token)).status,413);
+ assert.equal((await handleChatGptQuickLog(request({text:'Badminton queue 250pesos'},'https://attacker.example'),'preview',forward,token)).status,403);
  assert.equal(calls,0);
 });
 
-test('Dot testing supplies the server key for header-free requests and preserves scoped saves and retries',async()=>{
+test('Public Dot ignores caller credentials and preserves fixed-owner scoped saves and retries',async()=>{
  const {db,key,count}=await fixture();try{
-  await key();await db.exec("set role anon;select set_config('request.jwt.claim.sub','',false)");
+  await key();
+  const foreignToken = 'ft_quick_' + 'b'.repeat(64);
+  await db.exec(`select set_config('request.jwt.claim.sub','${other}',false)`); await key(foreignToken);
+  await db.exec("set role anon;select set_config('request.jwt.claim.sub','',false)");
   const forward=(request:Request)=>handleQuickLog(request,async args=>({data:(await db.query<{r:unknown}>('select submit_quick_log($1,$2::uuid,$3,$4,$5::date,$6) r',[args.p_token,args.p_request_id,args.p_text,args.p_action,args.p_date,args.p_digest])).rows[0].r,error:null}));
   const request=(body:unknown,authorization?:string,origin?:string)=>new Request('https://tracker.example/api/v1/chatgpt/preview',{method:'POST',headers:{'Content-Type':'application/json',...(authorization?{Authorization:authorization}:{}),...(origin?{Origin:origin}:{})},body:JSON.stringify(body)});
   const body={text:'Synthetic Dot test 12.30 Cash'};
-  assert.equal((await handleChatGptQuickLog(request(body),'preview',forward)).status,401);
-  assert.equal((await handleChatGptQuickLog(request(body),'preview',forward,'invalid')).status,401);
-  assert.equal((await handleChatGptQuickLog(request(body,'Bearer invalid'),'preview',forward,token)).status,401);
+  assert.equal((await handleChatGptQuickLog(request(body),'preview',forward)).status,503);
+  assert.equal((await handleChatGptQuickLog(request(body),'preview',forward,'invalid')).status,503);
+  assert.equal((await handleChatGptQuickLog(request(body,'Bearer invalid'),'preview',forward,token)).status,200);
   assert.equal((await handleChatGptQuickLog(request(body,undefined,'https://other.example'),'preview',forward,token)).status,403);
   assert.equal((await handleChatGptQuickLog(request({...body,owner:other}),'preview',forward,token)).status,400);
   const response=await handleChatGptQuickLog(request(body),'preview',forward,token);assert.equal(response.status,200);
+  const foreignCaller = await (await handleChatGptQuickLog(request(body,`Bearer ${foreignToken}`),'preview',forward,token)).json();
+  assert.equal(foreignCaller.entry.account_id,cash);
   const preview=await response.json();assert.equal(preview.persisted,false);assert.equal(preview.entry.account_id,cash);
   const send=()=>handleChatGptQuickLog(request(preview.retry),'commit',forward,token);
   const saved=await send();assert.equal(saved.status,201);const receipt=await saved.json();assert.equal(receipt.persisted,true);assert.ok(receipt.transaction_id);
   const retried=await send();assert.equal(retried.status,200);assert.equal((await retried.json()).transaction_id,receipt.transaction_id);
   await db.exec('reset role');assert.equal(await count('transactions'),1);assert.equal(await count('financial_audit'),1);
+  assert.equal((await db.query<{user_id:string}>('select user_id from transactions')).rows[0].user_id,owner);
  }finally{await db.close();}
 });

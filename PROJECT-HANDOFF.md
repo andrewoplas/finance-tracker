@@ -4,6 +4,12 @@ Verified 2026-10-11 (Asia/Manila).
 
 Publishing update (2026-10-11): following Drew's request to commit and push, local `main` incorporated GitHub commit `1914928` through a history-preserving merge. Its ChatGPT Actions implementation and learned-default instructions are now in the checkout. The consolidation findings and verification below describe the earlier `ccf454b` snapshot; they do not certify the merged code. Cash-default commit `b7b8cc7` remains unrecovered, and remote MCP activation and pending expenses remain unconfirmed. No migrations or explicit deployment actions were performed.
 
+## Public Dot expense access — 2026-10-11
+
+Drew explicitly requested removal of caller bearer authentication for expense logging. `/api/v1/chatgpt/preview` and `/api/v1/chatgpt/commit` now ignore caller Authorization and always use the private fixed-owner server credential, without a testing-mode flag. Their OpenAPI schema specifies no authentication. Other endpoints, including reflections and generic quick-log/SMS, retain their own authentication.
+
+Live header-free preview returned 401 before this change; the available private server credential successfully previewed a synthetic expense with `persisted: false`. No live expense was committed. The hosting project must configure an active `FINANCE_DOT_SERVER_KEY` or legacy `FINANCE_DOT_TEST_KEY`. The available key is temporary and needs renewal before its expiry. Vercel CLI environment access is blocked because its saved token is invalid; this session did not update hosting variables or deploy explicitly. No database migrations were applied to a live database.
+
 ## Current simplification update — 2026-10-11
 
 The approved implementation consolidates navigation into Overview, Transactions, Planning, Reports and Settings, and aligns shared page controls with `docs/BRAND-DESIGN.md`. Transactions includes entry, filtering, totals, CSV export, quick-log suggestions from the selected month and expandable incoming reviews. Planning retains spending plans, budgets, installments, recurring items and planned reminders. Accounts are under Settings. Shared-money UI, wallets, standalone Inbox and CSV import are hidden; stored data and backend contracts are preserved.

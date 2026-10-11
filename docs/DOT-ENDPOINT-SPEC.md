@@ -23,9 +23,9 @@ Both calls require:
 Content-Type: application/json
 ```
 
-During temporary Dot testing, omit `Authorization` entirely. Header-free requests work only when the deployed backend has testing mode enabled with an active server-held credential. A code push alone does not enable it. Public header-free access has not been verified for this specification; local header-free preview was verified. If the server returns 401, stop and report that the backend connection needs configuration. Do not invent credentials or repeatedly retry authentication failures.
+No caller authentication is required for these two expense endpoints. Omit `Authorization`; any supplied Authorization header is ignored and cannot select another owner. Dot does not need a token file or secret. These endpoints are public by Drew's explicit request.
 
-In normal authenticated mode, the HTTP tool must supply its configured scoped bearer key privately. Do not place keys in conversation text or JSON bodies. A supplied invalid Authorization header is not replaced by the testing credential.
+The backend selects Drew through its private active `FINANCE_DOT_SERVER_KEY` scoped credential (legacy `FINANCE_DOT_TEST_KEY` is accepted as a fallback). `FINANCE_DOT_TEST_MODE` is no longer consulted. This retains the existing owner validation, preview/commit contract, audit, limits and duplicate handling without caller bearer authentication. A missing/malformed server credential returns 503; an expired/revoked credential returns 401. A code push alone does not configure the hosting environment.
 
 Dot does not need an `Idempotency-Key` header for these two endpoints. The backend issues the request UUID during preview. For server-to-server calls, omit `Origin`; a supplied foreign Origin is rejected. These are ordinary HTTP endpoints, not MCP endpoints.
 

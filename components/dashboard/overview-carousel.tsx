@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useImperativeHandle, type Ref, type ReactNode } from "react";
+import { useRef, useState, useImperativeHandle, useLayoutEffect, type Ref, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export type OverviewCarouselHandle = { goTo: (index: number) => void };
@@ -11,6 +11,20 @@ export function OverviewCarousel({ cards, carouselRef }: {
 }) {
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const activeTitle = cards[active].title;
+  // Follow only the visible card, including expanded details and responsive reflow.
+  // Fixed slide heights either clip content or leave large empty panels.
+  useLayoutEffect(() => {
+    const element = track.current;
+    const card = element?.children[active] as HTMLElement | undefined;
+    if (!element || !card) return;
+    const fitHeight = () => { element.style.height = `${card.getBoundingClientRect().height}px`; };
+    fitHeight();
+    const observer = new ResizeObserver(fitHeight);
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, [active, activeTitle]);
+
   function goTo(index: number) {
     const element = track.current;
     const card = element?.children[index] as HTMLElement | undefined;
@@ -48,6 +62,5 @@ export function OverviewCarousel({ cards, carouselRef }: {
     <div className="overview-carousel-navigation" role="group" aria-label="Choose overview card">
       {cards.map((card, index) => <button type="button" key={card.title} aria-label={`Show ${card.title}`} aria-current={active === index ? "true" : undefined} onClick={() => goTo(index)}><span aria-hidden="true" /></button>)}
     </div>
-    <p className="insight-help overview-swipe-hint">Swipe left or right to explore · Scroll inside a card for more</p>
   </div>;
 }

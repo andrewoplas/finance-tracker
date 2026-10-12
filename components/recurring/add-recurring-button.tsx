@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
-import { Account, Category, TransactionType } from '@/types/database'
+import { Account, Category, TransactionType, RecurringTransaction } from '@/types/database'
 import { useRouter } from 'next/navigation'
 
 export function AddRecurringButton() {
@@ -36,7 +36,7 @@ export function AddRecurringButton() {
   const [categoryId, setCategoryId] = useState('')
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
-  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly')
+  const [frequency, setFrequency] = useState<RecurringTransaction['frequency']>('monthly')
   const [nextDate, setNextDate] = useState(new Date().toISOString().split('T')[0])
 
   const supabase = createClient()
@@ -63,6 +63,10 @@ export function AddRecurringButton() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (type === 'expense' && !categoryId) {
+      toast.error('Choose a category for this expense')
+      return
+    }
     setLoading(true)
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -183,13 +187,14 @@ export function AddRecurringButton() {
           {/* Frequency */}
           <div className="space-y-2">
             <Label>Frequency</Label>
-            <Select value={frequency} onValueChange={(v) => setFrequency(v as 'daily' | 'weekly' | 'monthly' | 'yearly')}>
+            <Select value={frequency} onValueChange={(v) => setFrequency(v as RecurringTransaction['frequency'])}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="daily">Daily</SelectItem>
                 <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="semimonthly">Every 1st and 15th</SelectItem>
                 <SelectItem value="monthly">Monthly</SelectItem>
                 <SelectItem value="yearly">Yearly</SelectItem>
               </SelectContent>

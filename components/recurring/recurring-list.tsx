@@ -45,7 +45,7 @@ export function RecurringList({ recurring }: RecurringListProps) {
     const { error } = await commitOperation({ action:'post_recurring', id:item.id, expected_next_date:item.next_date, date:manilaToday() })
     if(error) { toast.error(error.message); return }
 
-    toast.success('Transaction created!')
+    toast.success('Occurrence processed')
     router.refresh()
   }
 
@@ -95,7 +95,7 @@ export function RecurringList({ recurring }: RecurringListProps) {
                       </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {account?.name} • {item.frequency} • Next: {formatDate(item.next_date)}
+                      {account?.name} • {item.frequency === 'semimonthly' ? 'Every 1st and 15th' : item.frequency} • Next: {formatDate(item.next_date)}{item.next_time ? ` at ${item.next_time.slice(0, 5)}` : ''} (Manila)
                     </div>
                     {item.description && (
                       <p className="text-sm text-muted-foreground mt-1">{item.description}</p>

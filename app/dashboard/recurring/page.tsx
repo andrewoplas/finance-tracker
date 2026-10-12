@@ -22,7 +22,7 @@ export default async function RecurringPage() {
   return (
     <div className="brand-page space-y-6">
       <PlanningTabs />
-      <PageHeading title="Recurring" description="Track repeating income and expenses. Post each occurrence when you’re ready." action={<AddRecurringButton />} />
+      <PageHeading title="Recurring" description="Active schedules post automatically when due, using Manila time." action={<AddRecurringButton />} />
 
       <RecurringList recurring={recurring || []} />
       <PlannedItems />

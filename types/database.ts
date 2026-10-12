@@ -83,7 +83,8 @@ export interface RecurringTransaction {
   type: TransactionType
   amount: number
   description: string | null
-  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'semimonthly'
+  next_time: string | null
   next_date: string
   is_active: boolean
   created_at: string
